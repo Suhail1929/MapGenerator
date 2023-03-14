@@ -1,4 +1,5 @@
 %{
+#include "tree.h"
 #include "y.tab.h"
 void yyerror(const char *erreurMsg);
 %}
@@ -14,9 +15,13 @@ void yyerror(const char *erreurMsg);
          }
 fact { return FACT; }
 pow { return POW; }
+"++" { return INCREMENT; }
+"--" { return DECREMENT; }
+"quit" { return QUIT; }
 [a-zA-Z]+ { yylval.str = (char*)malloc((strlen(yytext)+1)*sizeof(char)); strcpy(yylval.str,yytext); return VARIABLE; }
 [-+*/\n\(\)=,]	 { return *yytext; }
 [ \t]	 ;
+
 .        yyerror("Caractère non valide");
 
 %%

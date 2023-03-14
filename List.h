@@ -3,19 +3,19 @@
 
 #define TYPE_ENTIER 0
 
-typedef struct variable
+typedef struct symbol
 {
   int type;
   char *name;
   union
   {
-    int intiger;
+    int integer;
   } value;
-} variable_t;
+} symbol_t;
 
 typedef struct cell
 {
-  variable_t var;
+  symbol_t var;
   struct cell *prev;
   struct cell *next;
 } cell_t;
@@ -25,19 +25,19 @@ typedef struct List
   cell_t *tete;
 } list_t;
 
-int variable_cmp(variable_t a, variable_t b);
+int variable_cmp(symbol_t a, symbol_t b);
 
-void init_cell(cell_t *c, variable_t variable);
+void init_cell(cell_t *c, symbol_t symbol);
 
 void init_list(list_t *l);
 
-void add_list(list_t *, variable_t variable);
+void add_list(list_t *, symbol_t symbol);
 
-void delete_from_list(list_t *, variable_t variable);
+void delete_from_list(list_t *, symbol_t symbol);
 
 void delete_cell(list_t *, cell_t *c);
 
-cell_t *find_cell(list_t *, variable_t variable);
+cell_t *find_cell(list_t *, symbol_t symbol);
 
 void display_list(list_t *);
 

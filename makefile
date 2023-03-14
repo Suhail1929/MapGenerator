@@ -10,8 +10,8 @@ YACC = yacc
 YACCFLAGS = -vd
 YACCLIB =
 
-$(EXECUTABLE): List.o hach_table.o y.tab.o lex.yy.o
-	gcc -o $(EXECUTABLE) List.o hach_table.o lex.yy.o y.tab.o $(LEXLIB) $(YACCLIB) -W -Wall -lm
+$(EXECUTABLE): List.o hach_table.o y.tab.o lex.yy.o tree.o
+	gcc -o $(EXECUTABLE) List.o tree.o hach_table.o lex.yy.o y.tab.o $(LEXLIB) $(YACCLIB) -W -Wall -lm
 
 lex.yy.o: lex.yy.c y.tab.h
 	gcc -c lex.yy.c
@@ -27,6 +27,9 @@ List.o: List.h List.c
 
 hach_table.o: hach_table.h hach_table.c
 	gcc -c hach_table.c
+	
+tree.o : tree.h tree.c
+	gcc -c tree.c
 
 y.tab.c y.tab.h : $(YACC_FILE)
 	$(YACC) $(YACCFLAGS) $(YACC_FILE)

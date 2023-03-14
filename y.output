@@ -1,0 +1,450 @@
+   0  $accept : programme $end
+
+   1  $$1 :
+
+   2  programme : addition '\n' $$1 programme
+
+   3  $$2 :
+
+   4  programme : VARIABLE '=' addition '\n' $$2 programme
+   5            | '\n' programme
+   6            |
+
+   7  addition : addition '+' soustraction
+   8           | soustraction
+
+   9  soustraction : soustraction '-' multiplication
+  10               | multiplication
+
+  11  multiplication : multiplication '*' division
+  12                 | division
+
+  13  division : division '/' moins
+  14           | moins
+
+  15  moins : '-' expression
+  16        | expression
+
+  17  expression : VARIABLE
+  18             | ENTIER
+  19             | '(' addition ')'
+  20             | VARIABLE INCREMENT
+  21             | VARIABLE DECREMENT
+  22             | QUIT
+
+state 0
+	$accept : . programme $end  (0)
+	programme : .  (6)
+
+	ENTIER  shift 1
+	VARIABLE  shift 2
+	QUIT  shift 3
+	'\n'  shift 4
+	'-'  shift 5
+	'('  shift 6
+	$end  reduce 6
+
+	programme  goto 7
+	addition  goto 8
+	soustraction  goto 9
+	multiplication  goto 10
+	division  goto 11
+	moins  goto 12
+	expression  goto 13
+
+
+state 1
+	expression : ENTIER .  (18)
+
+	.  reduce 18
+
+
+state 2
+	programme : VARIABLE . '=' addition '\n' $$2 programme  (4)
+	expression : VARIABLE .  (17)
+	expression : VARIABLE . INCREMENT  (20)
+	expression : VARIABLE . DECREMENT  (21)
+
+	INCREMENT  shift 14
+	DECREMENT  shift 15
+	'='  shift 16
+	'\n'  reduce 17
+	'+'  reduce 17
+	'-'  reduce 17
+	'*'  reduce 17
+	'/'  reduce 17
+
+
+state 3
+	expression : QUIT .  (22)
+
+	.  reduce 22
+
+
+state 4
+	programme : '\n' . programme  (5)
+	programme : .  (6)
+
+	ENTIER  shift 1
+	VARIABLE  shift 2
+	QUIT  shift 3
+	'\n'  shift 4
+	'-'  shift 5
+	'('  shift 6
+	$end  reduce 6
+
+	programme  goto 17
+	addition  goto 8
+	soustraction  goto 9
+	multiplication  goto 10
+	division  goto 11
+	moins  goto 12
+	expression  goto 13
+
+
+state 5
+	moins : '-' . expression  (15)
+
+	ENTIER  shift 1
+	VARIABLE  shift 18
+	QUIT  shift 3
+	'('  shift 6
+	.  error
+
+	expression  goto 19
+
+
+state 6
+	expression : '(' . addition ')'  (19)
+
+	ENTIER  shift 1
+	VARIABLE  shift 18
+	QUIT  shift 3
+	'-'  shift 5
+	'('  shift 6
+	.  error
+
+	addition  goto 20
+	soustraction  goto 9
+	multiplication  goto 10
+	division  goto 11
+	moins  goto 12
+	expression  goto 13
+
+
+state 7
+	$accept : programme . $end  (0)
+
+	$end  accept
+
+
+state 8
+	programme : addition . '\n' $$1 programme  (2)
+	addition : addition . '+' soustraction  (7)
+
+	'\n'  shift 21
+	'+'  shift 22
+	.  error
+
+
+state 9
+	addition : soustraction .  (8)
+	soustraction : soustraction . '-' multiplication  (9)
+
+	'-'  shift 23
+	'\n'  reduce 8
+	'+'  reduce 8
+	')'  reduce 8
+
+
+state 10
+	soustraction : multiplication .  (10)
+	multiplication : multiplication . '*' division  (11)
+
+	'*'  shift 24
+	'\n'  reduce 10
+	'+'  reduce 10
+	'-'  reduce 10
+	')'  reduce 10
+
+
+state 11
+	multiplication : division .  (12)
+	division : division . '/' moins  (13)
+
+	'/'  shift 25
+	'\n'  reduce 12
+	'+'  reduce 12
+	'-'  reduce 12
+	'*'  reduce 12
+	')'  reduce 12
+
+
+state 12
+	division : moins .  (14)
+
+	.  reduce 14
+
+
+state 13
+	moins : expression .  (16)
+
+	.  reduce 16
+
+
+state 14
+	expression : VARIABLE INCREMENT .  (20)
+
+	.  reduce 20
+
+
+state 15
+	expression : VARIABLE DECREMENT .  (21)
+
+	.  reduce 21
+
+
+state 16
+	programme : VARIABLE '=' . addition '\n' $$2 programme  (4)
+
+	ENTIER  shift 1
+	VARIABLE  shift 18
+	QUIT  shift 3
+	'-'  shift 5
+	'('  shift 6
+	.  error
+
+	addition  goto 26
+	soustraction  goto 9
+	multiplication  goto 10
+	division  goto 11
+	moins  goto 12
+	expression  goto 13
+
+
+state 17
+	programme : '\n' programme .  (5)
+
+	.  reduce 5
+
+
+state 18
+	expression : VARIABLE .  (17)
+	expression : VARIABLE . INCREMENT  (20)
+	expression : VARIABLE . DECREMENT  (21)
+
+	INCREMENT  shift 14
+	DECREMENT  shift 15
+	'\n'  reduce 17
+	'+'  reduce 17
+	'-'  reduce 17
+	'*'  reduce 17
+	'/'  reduce 17
+	')'  reduce 17
+
+
+state 19
+	moins : '-' expression .  (15)
+
+	.  reduce 15
+
+
+state 20
+	addition : addition . '+' soustraction  (7)
+	expression : '(' addition . ')'  (19)
+
+	'+'  shift 22
+	')'  shift 27
+	.  error
+
+
+state 21
+	programme : addition '\n' . $$1 programme  (2)
+	$$1 : .  (1)
+
+	.  reduce 1
+
+	$$1  goto 28
+
+
+state 22
+	addition : addition '+' . soustraction  (7)
+
+	ENTIER  shift 1
+	VARIABLE  shift 18
+	QUIT  shift 3
+	'-'  shift 5
+	'('  shift 6
+	.  error
+
+	soustraction  goto 29
+	multiplication  goto 10
+	division  goto 11
+	moins  goto 12
+	expression  goto 13
+
+
+state 23
+	soustraction : soustraction '-' . multiplication  (9)
+
+	ENTIER  shift 1
+	VARIABLE  shift 18
+	QUIT  shift 3
+	'-'  shift 5
+	'('  shift 6
+	.  error
+
+	multiplication  goto 30
+	division  goto 11
+	moins  goto 12
+	expression  goto 13
+
+
+state 24
+	multiplication : multiplication '*' . division  (11)
+
+	ENTIER  shift 1
+	VARIABLE  shift 18
+	QUIT  shift 3
+	'-'  shift 5
+	'('  shift 6
+	.  error
+
+	division  goto 31
+	moins  goto 12
+	expression  goto 13
+
+
+state 25
+	division : division '/' . moins  (13)
+
+	ENTIER  shift 1
+	VARIABLE  shift 18
+	QUIT  shift 3
+	'-'  shift 5
+	'('  shift 6
+	.  error
+
+	moins  goto 32
+	expression  goto 13
+
+
+state 26
+	programme : VARIABLE '=' addition . '\n' $$2 programme  (4)
+	addition : addition . '+' soustraction  (7)
+
+	'\n'  shift 33
+	'+'  shift 22
+	.  error
+
+
+state 27
+	expression : '(' addition ')' .  (19)
+
+	.  reduce 19
+
+
+state 28
+	programme : addition '\n' $$1 . programme  (2)
+	programme : .  (6)
+
+	ENTIER  shift 1
+	VARIABLE  shift 2
+	QUIT  shift 3
+	'\n'  shift 4
+	'-'  shift 5
+	'('  shift 6
+	$end  reduce 6
+
+	programme  goto 34
+	addition  goto 8
+	soustraction  goto 9
+	multiplication  goto 10
+	division  goto 11
+	moins  goto 12
+	expression  goto 13
+
+
+state 29
+	addition : addition '+' soustraction .  (7)
+	soustraction : soustraction . '-' multiplication  (9)
+
+	'-'  shift 23
+	'\n'  reduce 7
+	'+'  reduce 7
+	')'  reduce 7
+
+
+state 30
+	soustraction : soustraction '-' multiplication .  (9)
+	multiplication : multiplication . '*' division  (11)
+
+	'*'  shift 24
+	'\n'  reduce 9
+	'+'  reduce 9
+	'-'  reduce 9
+	')'  reduce 9
+
+
+state 31
+	multiplication : multiplication '*' division .  (11)
+	division : division . '/' moins  (13)
+
+	'/'  shift 25
+	'\n'  reduce 11
+	'+'  reduce 11
+	'-'  reduce 11
+	'*'  reduce 11
+	')'  reduce 11
+
+
+state 32
+	division : division '/' moins .  (13)
+
+	.  reduce 13
+
+
+state 33
+	programme : VARIABLE '=' addition '\n' . $$2 programme  (4)
+	$$2 : .  (3)
+
+	.  reduce 3
+
+	$$2  goto 35
+
+
+state 34
+	programme : addition '\n' $$1 programme .  (2)
+
+	.  reduce 2
+
+
+state 35
+	programme : VARIABLE '=' addition '\n' $$2 . programme  (4)
+	programme : .  (6)
+
+	ENTIER  shift 1
+	VARIABLE  shift 2
+	QUIT  shift 3
+	'\n'  shift 4
+	'-'  shift 5
+	'('  shift 6
+	$end  reduce 6
+
+	programme  goto 36
+	addition  goto 8
+	soustraction  goto 9
+	multiplication  goto 10
+	division  goto 11
+	moins  goto 12
+	expression  goto 13
+
+
+state 36
+	programme : VARIABLE '=' addition '\n' $$2 programme .  (4)
+
+	.  reduce 4
+
+
+17 terminals, 10 nonterminals
+23 grammar rules, 37 states

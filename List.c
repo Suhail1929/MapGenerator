@@ -3,22 +3,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-int variable_cmp(variable_t a, variable_t b)
+int variable_cmp(symbol_t a, symbol_t b)
 {
   return strcmp(a.name, b.name);
 }
 
-void init_cell(cell_t *c, variable_t variable)
+void init_cell(cell_t *c, symbol_t symbol)
 {
   char *str = NULL;
 
   if (c != NULL)
   {
-    str = (char *)malloc((strlen(variable.name) + 1) * sizeof(char));
-    strcpy(str, variable.name);
-    variable.name = str;
+    str = (char *)malloc((strlen(symbol.name) + 1) * sizeof(char));
+    strcpy(str, symbol.name);
+    symbol.name = str;
 
-    c->var = variable;
+    c->var = symbol;
     c->prev = NULL;
     c->next = NULL;
   }
@@ -29,12 +29,12 @@ void init_list(list_t *l)
   l->tete = NULL;
 }
 
-void add_list(list_t *l, variable_t variable)
+void add_list(list_t *l, symbol_t symbol)
 {
   if (l != NULL)
   {
     cell_t *c = (cell_t *)malloc(sizeof(cell_t));
-    init_cell(c, variable);
+    init_cell(c, symbol);
 
     c->next = l->tete;
     if (l->tete != NULL)
@@ -45,11 +45,11 @@ void add_list(list_t *l, variable_t variable)
   }
 }
 
-void delete_from_list(list_t *l, variable_t variable)
+void delete_from_list(list_t *l, symbol_t symbol)
 {
   if (l != NULL)
   {
-    cell_t *c = find_cell(l, variable);
+    cell_t *c = find_cell(l, symbol);
     delete_cell(l, c);
     free(c->var.name);
     free(c);
@@ -77,12 +77,12 @@ void delete_cell(list_t *l, cell_t *c)
   }
 }
 
-cell_t *find_cell(list_t *l, variable_t variable)
+cell_t *find_cell(list_t *l, symbol_t symbol)
 {
   if (l != NULL)
   {
     cell_t *c = l->tete;
-    while (c != NULL && variable_cmp(c->var, variable) != 0)
+    while (c != NULL && variable_cmp(c->var, symbol) != 0)
     {
       c = c->next;
     }
@@ -99,7 +99,7 @@ void display_list(list_t *l)
     switch (c->var.type)
     {
     case TYPE_ENTIER:
-      printf("%s (value %d)", c->var.name, c->var.value.intiger);
+      printf("%s (value %d)", c->var.name, c->var.value.integer);
       break;
     default:
       break;

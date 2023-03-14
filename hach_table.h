@@ -6,11 +6,11 @@ typedef struct Table
   int size;
 } hach_t;
 
-int hach(hach_t *t, variable_t var);
+int hach(hach_t *t, symbol_t var);
 
-void insert_hach(hach_t *t, variable_t var);
+void insert_hach(hach_t *t, symbol_t var);
 
-cell_t *search_hach(hach_t *t, variable_t var);
+cell_t *search_hach(hach_t *t, symbol_t var);
 
 void delete_hach(hach_t *t, cell_t *c);
 

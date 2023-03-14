@@ -4,18 +4,18 @@
 #include "List.h"
 #include "hach_table.h"
 
-int hach(hach_t *t, variable_t var)
+int hach(hach_t *t, symbol_t var)
 {
   return ch_to_int(var.name) % t->size;
 }
 
-void insert_hach(hach_t *t, variable_t var)
+void insert_hach(hach_t *t, symbol_t var)
 {
   list_t *l = &t->tab[hach(t, var)];
   add_list(l, var);
 }
 
-cell_t *search_hach(hach_t *t, variable_t var)
+cell_t *search_hach(hach_t *t, symbol_t var)
 {
   list_t *l = &t->tab[hach(t, var)];
   return find_cell(l, var);
