@@ -1,42 +1,100 @@
-EXECUTABLE = analyser
+#
+# MAIN CONFIGURATION
+#
 
-LEX_FILE = analyser.lex
-YACC_FILE = analyser.yacc.y
+EXEC = main
+ANALYSER = analyser
+OBJECTS = lex.yy.o y.tab.o hach_table.o tree.o List.o 
+PROJECT_NAME = main
 
-LEX = flex
-LEXFLAGS =
-LEXLIB = -lfl
-YACC = yacc
-YACCFLAGS = -vd
-YACCLIB =
+#
+# SUFFIXES
+#
 
-$(EXECUTABLE): List.o hach_table.o y.tab.o lex.yy.o tree.o
-	gcc -o $(EXECUTABLE) List.o tree.o hach_table.o lex.yy.o y.tab.o $(LEXLIB) $(YACCLIB) -W -Wall -lm
+.SUFFIXES: .c .o
 
-lex.yy.o: lex.yy.c y.tab.h
-	gcc -c lex.yy.c
+#
+# OBJECTS
+#
 
-lex.yy.c: $(LEX_FILE)
-	$(LEX) $(LEXFLAGS) $(LEX_FILE)
+EXEC_O = $(EXEC:=.o)
+OBJECTS_O = $(OBJETS) $(EXEC_O)
 
-y.tab.o : y.tab.h y.tab.c
-	gcc -c y.tab.c
+#
+# ARGUMENTS AND COMPILER
+#
 
-List.o: List.h List.c
-	gcc -c List.c
+CC = gcc
+CCFLAGS_STD = -Wall -Werror
+CCFLAGS_DEBUG = -D _DEBUG_
+CCFLAGS = $(CCFLAGS_STD)
+CCLIBS = -lfl
+YACCFLAGS = -d
 
-hach_table.o: hach_table.h hach_table.c
-	gcc -c hach_table.c
-	
-tree.o : tree.h tree.c
-	gcc -c tree.c
+#
+# RULES
+#
 
-y.tab.c y.tab.h : $(YACC_FILE)
-	$(YACC) $(YACCFLAGS) $(YACC_FILE)
+all: msg $(OBJECTS) $(EXEC_O)
+	@echo "Create executables..."
+	@for i in $(EXEC); do \
+	$(CC) -o $$i $$i.o $(OBJECTS) $(CCLIBS); \
+	done
+	@echo "Done."
+
+msg:
+	@echo "Create objects..."
+
+debug: CCFLAGS = $(CCFLAGS_STD) $(CCFLAGS_DEBUG)
+debug: all
+
+#
+# DEFAULT RULES
+#
+
+%.o : %.c
+	@cd $(dir $<) && ${CC} ${CCFLAGS} -c $(notdir $<) -o $(notdir $@)
+
+lex.yy.c : $(ANALYSER).lex y.tab.h
+	@flex $(ANALYSER).lex
+
+y.tab.c y.tab.h : $(ANALYSER).yacc.y
+	@yacc ${YACCFLAGS} $(ANALYSER).yacc.y
+
+#
+# GENERAL RULES
+#
 
 clean:
-	rm -f *~ \#* *.o
-	rm -f $(EXECUTABLE) $(EXECUTABLE:=.exe)
-	rm -f *.core *.stackdump
-	rm -f lex.yy.c lex.yy.o
-	rm -f y.tab.* y.output
+	@echo "Delete objects, temporary files..."
+	@rm -f $(OBJECTS) $(EXEC_O)
+	@rm -f *~ *#
+	@rm -f $(EXEC)
+	@rm -f dependancies
+	@rm -f y.tab.* lex.yy.* y.output
+	@echo "Done."
+
+depend:
+	@echo "Create dependancies..."
+	@sed -e "/^# DEPENDANCIES/,$$ d" makefile > dependancies
+	@echo "# DEPENDANCIES" >> dependancies
+	@for i in $(OBJECTS_O); do \
+	$(CC) -MM -MT $$i $(CCFLAGS) `echo $$i | sed "s/\(.*\)\\.o$$/\1.c/"` >> dependancies; \
+	done
+	@cat dependancies > makefile
+	@rm dependancies
+	@echo "Done."
+
+#
+# CREATE ARCHIVE
+#
+
+ARCHIVE_FILES = *
+
+archive: clean
+	@echo "Create archive $(PROJECT_NAME)_$(shell date '+%y%m%d.tar.gz')..."
+	@REP=`basename "$$PWD"`; cd .. && tar zcf $(PROJECT_NAME)_$(shell date '+%y%m%d.tar.gz') $(addprefix "$$REP"/,$(ARCHIVE_FILES))
+	@echo "Done."
+
+# DEPENDANCIES
+main.o: main.c List.h hach_table.h include.h

@@ -7,6 +7,7 @@ typedef struct tree_list_t tree_list_t;
 struct tree_t
 {
     char type; // 0 = entier, 1 = opérateur, 2 = fonction
+    int isbool;
     union
     {
         int integer; // si type == 0
@@ -22,7 +23,7 @@ struct tree_list_t
     tree_list_t *next;
 };
 
-tree_t *create_tree(char type, int val, tree_list_t *child);
+tree_t *create_tree(char type, int val, tree_list_t *child, int isbool);
 double evaluated_tree(tree_t *root);
 tree_list_t *create_tree_list(tree_t *tree, tree_list_t *child);
 void add_child_node(tree_t *parent, tree_t *child);

@@ -2,22 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "tree.h"
+#include "stdio.h"
+#include "stdlib.h"
 #include "List.h"
 #include "hach_table.h"
-#include "tree.h"
+#include "include.h"
 
-#define TAILLE_TABLE 20
-
-#define ERR_DIV_0 1
-#define ERR_SYMBOLE 2
-
-int yylex();
-int yyerror(char* s);
-int erreur=0;
-char* symbole_erreur=NULL;
-hach_t table;
-
-int fact(int a);
+int erreur = 0;
+char *symbole_erreur = NULL;
 %}
 
 %union{
@@ -33,6 +26,12 @@ int fact(int a);
 %token INCREMENT
 %token DECREMENT
 %token QUIT
+%token EGAL
+%token DIFFERENT
+%token INFEGAL
+%token SUPEGAL
+%token ET
+%token OU
 
 %type<entier> ENTIER POW FACT addition soustraction multiplication division moins expression
 %type<str> VARIABLE
@@ -50,9 +49,18 @@ programme: addition '\n' {
           symbole_erreur=NULL;
           erreur=0;
         }else{
-          printf("=%lf\n", evaluated_tree($<tree>1));
-          print_tree($<tree>1);
-          printf("\n");
+          tree_t *tr = $<tree>1;
+          if(tr->isbool == 1){
+            if(evaluated_tree(tr) == 1){
+              printf("Vrai\n");
+            }else{
+              printf("Faux\n");
+            }
+          }else{
+            printf("=%lf\n", evaluated_tree($<tree>1));
+            print_tree($<tree>1);
+            printf("\n");
+          }
         }
       } programme
       | VARIABLE '=' addition '\n' {
@@ -88,27 +96,27 @@ programme: addition '\n' {
       ;
 
 addition: addition '+' soustraction {
-        tree_t *add = create_tree('+',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)));
-        $$ = add;
+        tree_t *add = create_tree('+',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);
+        $<tree>$ = add;
       }
       | soustraction;
 
 soustraction: soustraction '-' multiplication {
-        tree_t *sous = create_tree('-',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)));
-        $$ = sous;
+        tree_t *sous = create_tree('-',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);
+        $<tree>$ = sous;
       }
       | multiplication;
 
 multiplication: multiplication '*' division {
-        tree_t *mult = create_tree('*',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)));
-        $$ = mult;
+        tree_t *mult = create_tree('*',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);
+        $<tree>$ = mult;
       }
       | division;
 
 division: division '/' moins {
         if($3!=0){
-          tree_t *div = create_tree('/',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)));
-          $$ = div;
+          tree_t *div = create_tree('/',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);
+          $<tree>$ = div;
         }else{
           if(erreur==0) erreur=ERR_DIV_0;
         }
@@ -116,10 +124,11 @@ division: division '/' moins {
       | moins;
 
 moins: '-' expression {
-        tree_t *moins = create_tree('-',0,create_tree_list($<tree>2,NULL));
-        $$ = moins;
+        tree_t *moins = create_tree('u',0,create_tree_list($<tree>2,NULL),0);
+        $<tree>$ = moins;
   }
   | expression;
+
 
 
 
@@ -134,27 +143,26 @@ expression: VARIABLE {
                 if(symbole_erreur!=NULL) free(symbole_erreur);
                 symbole_erreur=$1;
               }else{
-                $$ = create_tree('n',c->var.value.integer,NULL);
+                $$ = create_tree('n',c->var.value.integer,NULL,0);
               }
             }
-            | ENTIER { tree_t *t = create_tree('n',$1,NULL); t->value.integer = $1; $$ = t;}
+            | ENTIER { tree_t *t = create_tree('n',$1,NULL,0); t->value.integer = $1; $$ = t;}
             // | POW '(' addition ',' addition ')' { $$ = pow($3,$5); }
             // | FACT '(' addition ')' { $$ = fact($3); }
-            | '(' addition ')' { $$ = $2; }
+            | '(' addition ')' { $$ = $<tree>2; }
             | VARIABLE INCREMENT { 
               symbol_t var;
               var.type = TYPE_ENTIER;
               var.name = $1;
               cell_t *c = search_hach(&table,var);
               if(c==NULL){
-              var.value.integer = 1;
-              insert_hach(&table,var);
-              $$ = 1;
+              printf("Variable inconnue : %s \n",var.name);
+              exit(1);
               }else{
               c->var.value.integer++;
-              $$ = create_tree('n',c->var.value.integer,NULL);
+              $$ = create_tree('n',c->var.value.integer,NULL,0);
               }
-              free_tree($1);
+              free_tree($<tree>1);
               }
             | VARIABLE DECREMENT {
               symbol_t var;
@@ -162,16 +170,47 @@ expression: VARIABLE {
               var.name = $1;
               cell_t *c = search_hach(&table,var);
               if(c==NULL){
-              var.value.integer = 1;
-              insert_hach(&table,var);
-              $$ = 1;
+              printf("Variable inconnue : %s \n",var.name);
+              exit(1);
               }else{
               c->var.value.integer--;
-              $$ = create_tree('n',c->var.value.integer,NULL);
+              $$ = create_tree('n',c->var.value.integer,NULL,0);
               }
-              free_tree($1);
+              free_tree($<tree>1);
               }
             | QUIT { exit(0); }
+            | expression EGAL expression { 
+              tree_t *egal = create_tree('=',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = egal;
+            }
+            | expression DIFFERENT expression { 
+              tree_t *diff = create_tree('!',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = diff;
+            }
+            | expression '<' expression { 
+              tree_t *petit = create_tree('<',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = petit;
+            }
+            | expression '>' expression { 
+              tree_t *grand = create_tree('>',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = grand;
+            }
+            | expression INFEGAL expression { 
+              tree_t *petit = create_tree('I',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = petit;
+            }
+            | expression SUPEGAL expression { 
+              tree_t *grand = create_tree('S',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = grand;
+            }
+            | expression ET expression { 
+              tree_t *et = create_tree('&',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = et;
+            }
+            | expression OU expression { 
+              tree_t *ou = create_tree('|',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = ou;
+            }
   
 
 %%
@@ -184,10 +223,10 @@ int fact(int a){
   return res;
 }
 
-int main(void) {
-  init_hachtable(&table,TAILLE_TABLE);
-  yyparse();
-  destroy_hachtable(&table);
-  printf("Fin du programme\n");
-  return EXIT_SUCCESS;
-}
+// int main(void) {
+//   init_hachtable(&table,TAILLE_TABLE);
+//   yyparse();
+//   destroy_hachtable(&table);
+//   printf("Fin du programme\n");
+//   return EXIT_SUCCESS;
+// }

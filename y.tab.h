@@ -5,6 +5,12 @@
 #define INCREMENT 261
 #define DECREMENT 262
 #define QUIT 263
+#define EGAL 264
+#define DIFFERENT 265
+#define INFEGAL 266
+#define SUPEGAL 267
+#define ET 268
+#define OU 269
 #ifdef YYSTYPE
 #undef  YYSTYPE_IS_DECLARED
 #define YYSTYPE_IS_DECLARED 1

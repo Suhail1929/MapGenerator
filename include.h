@@ -1,16 +1,15 @@
 #ifndef _INCLUDE_
 #define _INCLUDE_
 
-/* Valeurs possibles pour les opérandes */
-typedef union {
-    int entier;
-    float reel;
-} type_t;
+#define TAILLE_TABLE 20
 
-/* Constantes et type pour les booléens */
-#define TRUE 1
-#define FALSE 0
+#define ERR_DIV_0 1
+#define ERR_SYMBOLE 2
 
-typedef int booleen;
+int yylex();
+int yyerror(char *s);
+hach_t table;
+
+int fact(int a);
 
 #endif

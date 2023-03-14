@@ -3,10 +3,11 @@
 #include <string.h>
 #include "tree.h"
 // Create a new tree node with the specified type and value
-tree_t *create_tree(char type, int val, tree_list_t *child)
+tree_t *create_tree(char type, int val, tree_list_t *child, int isbool)
 {
     tree_t *node = (tree_t *)malloc(sizeof(tree_t));
     node->type = type;
+    node->isbool = isbool;
     if (node->type == 'n')
     {
         node->value.integer = val;
@@ -82,9 +83,26 @@ double evaluated_tree(tree_t *root)
             child = child->next;
         }
         return res;
+    case '<':
+        return evaluated_tree(root->value.children->tree) < evaluated_tree(root->value.children->next->tree);
+    case '>':
+        return evaluated_tree(root->value.children->tree) > evaluated_tree(root->value.children->next->tree);
+    case 'I':
+        return evaluated_tree(root->value.children->tree) <= evaluated_tree(root->value.children->next->tree);
+    case 'S':
+        return evaluated_tree(root->value.children->tree) >= evaluated_tree(root->value.children->next->tree);
+    case '=':
+        return evaluated_tree(root->value.children->tree) == evaluated_tree(root->value.children->next->tree);
+    case '!':
+        return evaluated_tree(root->value.children->tree) != evaluated_tree(root->value.children->next->tree);
+    case '&':
+        return evaluated_tree(root->value.children->tree) && evaluated_tree(root->value.children->next->tree);
+    case '|':
+        return evaluated_tree(root->value.children->tree) || evaluated_tree(root->value.children->next->tree);
     default:
         break;
     }
+    return -1;
 }
 
 // Traverse the tree and print the values of all nodes
