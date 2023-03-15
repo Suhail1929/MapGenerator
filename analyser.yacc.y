@@ -8,9 +8,15 @@
 #include "List.h"
 #include "hach_table.h"
 #include "include.h"
-
+extern int yylineno;
+void yyerror(const char *erreurMsg)
+{
+    fprintf(stderr, "Error at line %d: %s\n", yylineno, erreurMsg);
+    exit(EXIT_FAILURE);
+}
 int erreur = 0;
 char *symbole_erreur = NULL;
+int map[20][60];
 %}
 
 %union{
@@ -21,8 +27,8 @@ char *symbole_erreur = NULL;
 
 %token ENTIER
 %token VARIABLE
-%token POW
-%token FACT
+%token PUT
+%token GET
 %token INCREMENT
 %token DECREMENT
 %token QUIT
@@ -32,9 +38,10 @@ char *symbole_erreur = NULL;
 %token SUPEGAL
 %token ET
 %token OU
+%token LEVEL END
 
-%type<entier> ENTIER POW FACT addition soustraction multiplication division moins expression
-%type<str> VARIABLE
+%type<entier> ENTIER GET addition soustraction multiplication division moins expression
+%type<str> VARIABLE niveau end
 %type<tree> expression
 
 %%
@@ -49,7 +56,9 @@ programme: addition '\n' {
           symbole_erreur=NULL;
           erreur=0;
         }else{
+          
           tree_t *tr = $<tree>1;
+          
           if(tr->isbool == 1){
             if(evaluated_tree(tr) == 1){
               printf("Vrai\n");
@@ -57,9 +66,16 @@ programme: addition '\n' {
               printf("Faux\n");
             }
           }else{
-            printf("=%lf\n", evaluated_tree($<tree>1));
-            print_tree($<tree>1);
-            printf("\n");
+            if(evaluated_tree($<tree>1) == PUT_ACC){
+              printf("Put effectué\n");
+            }else if(evaluated_tree($<tree>1) == PUT_REJ){
+              printf("ERROR : Put n'est pas effectué\n");
+            }
+            else{
+              printf("=%lf\n", evaluated_tree($<tree>1));
+              print_tree($<tree>1);
+              printf("\n");
+            }
           }
         }
       } programme
@@ -147,8 +163,8 @@ expression: VARIABLE {
               }
             }
             | ENTIER { tree_t *t = create_tree('n',$1,NULL,0); t->value.integer = $1; $$ = t;}
-            // | POW '(' addition ',' addition ')' { $$ = pow($3,$5); }
-            // | FACT '(' addition ')' { $$ = fact($3); }
+            | PUT '(' expression ',' expression ','expression')' { $$ =create_tree('n',put(evaluated_tree($<tree>3),evaluated_tree($<tree>5),evaluated_tree($<tree>7)),NULL,0); }
+            | GET '(' expression ',' expression ')' { $$ = create_tree('n',get(evaluated_tree($<tree>3),evaluated_tree($<tree>5)),NULL,0); }
             | '(' addition ')' { $$ = $<tree>2; }
             | VARIABLE INCREMENT { 
               symbol_t var;
@@ -212,21 +228,34 @@ expression: VARIABLE {
               $$ = ou;
             }
   
-
+niveau:
+    LEVEL end{
+        printf("Found a level\n");
+    }
+    | LEVEL error{
+        fprintf(stderr, "Error at line %d: %s\n", yylineno, "Niveau non terminé");
+        exit(EXIT_FAILURE);
+    };
+end:
+    END{
+    }
+    ;
 %%
 
-int fact(int a){
-  int res=1,i;
-  for(i=2;i<=a;++i){
-    res*=i;
+int put(int x,int y,int z){
+  if(x>20 || x<0 || y>60 || y<0){
+    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Coordonnées incorrectes");
+    return PUT_REJ;
+  }else{
+    map[x][y]=z;
+    return PUT_ACC;
   }
-  return res;
 }
-
-// int main(void) {
-//   init_hachtable(&table,TAILLE_TABLE);
-//   yyparse();
-//   destroy_hachtable(&table);
-//   printf("Fin du programme\n");
-//   return EXIT_SUCCESS;
-// }
+int get(int x,int y){
+  if(x>20 || x<0 || y>60 || y<0){
+    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Coordonnées incorrectes");
+    exit(EXIT_FAILURE);
+  }else{
+    return map[x][y];
+  }
+}

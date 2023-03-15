@@ -1,0 +1,9 @@
+level
+  x=0
+  put(x, 0, BLOCK)
+  x=x+1
+  put(x, 0, BLOCK)
+  y=x
+  y=y+1
+  put(y, 0, BLOCK)
+end

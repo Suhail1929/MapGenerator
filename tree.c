@@ -39,6 +39,8 @@ tree_list_t *create_tree_list(tree_t *tree, tree_list_t *child)
 
 double evaluated_tree(tree_t *root)
 {
+    if (root == NULL)
+        return -1;
     double res = 0;
     tree_list_t *child;
     switch (root->type)

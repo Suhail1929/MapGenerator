@@ -1,7 +1,8 @@
 %{
 #include "tree.h"
 #include "y.tab.h"
-void yyerror(const char *erreurMsg);
+extern void yyerror(const char *msg);
+extern int yylineno;
 %}
 
 %option nounput
@@ -13,16 +14,18 @@ void yyerror(const char *erreurMsg);
            yylval.entier = atoi(yytext);
            return ENTIER;
          }
-fact { return FACT; }
-pow { return POW; }
+level { return LEVEL; }
+end { return END; }
+put { return PUT; }
+get { return GET; }
 "++" { return INCREMENT; }
 "--" { return DECREMENT; }
 "==" { return EGAL; }
-"!=" { return DIFFERENT; }
+"<>" { return DIFFERENT; }
 "<=" { return INFEGAL; }
 ">=" { return SUPEGAL; }
-"&&" { return ET; }
-"||" { return OU; }
+"AND" { return ET; }
+"OR" { return OU; }
 
 "quit" { return QUIT; }
 [a-zA-Z]+ { yylval.str = (char*)malloc((strlen(yytext)+1)*sizeof(char)); strcpy(yylval.str,yytext); return VARIABLE; }
@@ -33,7 +36,3 @@ pow { return POW; }
 
 %%
 
-void yyerror(const char *erreurMsg) {
-  fprintf(stderr, "\n Erreur '%s' sur '%s'.\n", erreurMsg, yytext);
-  exit(EXIT_FAILURE);
-}

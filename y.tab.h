@@ -1,7 +1,7 @@
 #define ENTIER 257
 #define VARIABLE 258
-#define POW 259
-#define FACT 260
+#define PUT 259
+#define GET 260
 #define INCREMENT 261
 #define DECREMENT 262
 #define QUIT 263
@@ -11,6 +11,8 @@
 #define SUPEGAL 267
 #define ET 268
 #define OU 269
+#define LEVEL 270
+#define END 271
 #ifdef YYSTYPE
 #undef  YYSTYPE_IS_DECLARED
 #define YYSTYPE_IS_DECLARED 1

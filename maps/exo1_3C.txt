@@ -1,0 +1,4 @@
+level
+  put(10,10,BLOCK)
+  put(11,10,get(10, 10))
+end
