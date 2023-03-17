@@ -11,15 +11,8 @@
 #include "level.h"
 #include "include.h"
 
-extern int yylineno;
-void yyerror(const char *erreurMsg)
-{
-    fprintf(stderr, "Error at line %d: %s\n", get_nb_line(), erreurMsg);
-    exit(EXIT_FAILURE);
-}
 int erreur = 0;
 char *symbole_erreur = NULL;
-int map[20][60];
 %}
 
 %union{
@@ -48,36 +41,24 @@ int map[20][60];
 %token END
 
 %type<entier> ENTIER GET addition soustraction multiplication division moins expression
-%type<str> VARIABLE niveau end
+%type<str> VARIABLE
 %type<tree> expression
 
 %%
 niveau:
-    LEVEL programme END{
+    LEVEL'\n' programme END '\n'{
         printf("Found a level\n");
         if(setlocale(LC_ALL, "") == NULL)printf("setlocale failed.\n");
         level_t level;
+        
         level_init(&level);  
-        // int i,j;
-        // for (int i = 0; i < HEIGHT; i++)
-        // {
-        //     for (int j = 0; j < WIDTH; j++)
-        //     {
-        //         if (map[i][j] >= 10)
-        //         {
-        //             printf("%d", map[i][j]);
-        //         }
-        //         else
-        //         {
-        //             printf("%d ", map[i][j]);
-        //         }
-        //     }
-        //     printf("\n");
-        // }
         draw_map(&level);
         level_display(&level);
-    }        
+        map_init();
+    }niveau
+    | '\n' niveau
     ;
+
 
 programme: addition '\n' {
         if(erreur==ERR_DIV_0){
@@ -228,7 +209,7 @@ expression: VARIABLE {
               }
               free_tree($<tree>1);
               }
-            | QUIT { exit(0); }
+            // | QUIT { exit(0); }
             | expression EGAL expression { 
               tree_t *egal = create_tree('=',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
               $$ = egal;
@@ -264,103 +245,3 @@ expression: VARIABLE {
   
 
 %%
-
-int put(int x,int y,int z){
-  if(x>20 || x<0 || y>60 || y<0){
-  fprintf(stderr, "Error at line %d: %s\n", yylineno, "Coordonnées incorrectes");
-  return PUT_REJ;
-  }else{
-    map[x][y]=z;
-
-    return PUT_ACC;
-  }
-}
-int get(int x,int y){
-  if(x>20 || x<0 || y>60 || y<0){
-    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Coordonnées incorrectes");
-    exit(EXIT_FAILURE);
-  }else{
-    return map[x][y];
-  }
-}
-int door(int x){
-  if(x>99 || x<1){
-    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Clé incorrecte");
-    exit(EXIT_FAILURE);
-  }else{
-    return 300 + x;
-  }
-}
-int key(int x){
-  if(x>4 || x<0){
-    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Clé incorrecte");
-    exit(EXIT_FAILURE);
-  }else{
-    return 20 + x;
-  }
-}
-int gate(int x){
-   if(x>4 || x<0){
-    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Clé incorrecte");
-    exit(EXIT_FAILURE);
-  }else{
-    return 10 + x;
-  }
-}
-int get_nb_line(){
-  return yylineno;
-}
-void draw_map(level_t *level)
-{
-    int x, y;
-    for (x = 0; x < 20; x++)
-    {
-        for (y = 0; y < 60; y++)
-        {
-            switch (map[x][y])
-            {
-            case 1:
-                level_add_block(level, y, x);
-                break;
-            case 7:
-                level_add_robot(level, y, x);
-                break;
-            case 6:
-                level_add_probe(level, y, x);
-                break;
-            case 0:
-                // level_add_empty(level, y, x);
-                break;
-            case 4:
-                level_add_trap(level, y, x);
-                break;
-            case 5:
-                level_add_ladder(level, y, x);
-                break;
-            case 3:
-                level_add_bomb(level, y, x);
-                break;
-            case 2:
-                level_add_life(level, y, x);
-                break;
-            case 21 ... 24:
-                level_add_key(level, y, x, map[x][y] - 20);
-                break;
-            case 11 ... 14:
-                level_add_gate(level, y, x, map[x][y] - 10);
-                break;
-            case 301 ... 399:
-                level_add_door(level, y, x, map[x][y] - 300);
-                break;
-            case 9:
-                level_add_start(level, y, x);
-                break;
-            case 8:
-                level_add_exit(level, y, x);
-                break;
-            default:
-                break;
-            }
-        }
-    }
-}
