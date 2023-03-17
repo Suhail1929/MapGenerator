@@ -3,15 +3,18 @@
 #include <stdlib.h>
 #include <math.h>
 #include "tree.h"
-#include "stdio.h"
-#include "stdlib.h"
 #include "List.h"
 #include "hach_table.h"
+#include <wchar.h>
+#include <locale.h>
+#include <string.h>
+#include "level.h"
 #include "include.h"
+
 extern int yylineno;
 void yyerror(const char *erreurMsg)
 {
-    fprintf(stderr, "Error at line %d: %s\n", yylineno, erreurMsg);
+    fprintf(stderr, "Error at line %d: %s\n", get_nb_line(), erreurMsg);
     exit(EXIT_FAILURE);
 }
 int erreur = 0;
@@ -29,6 +32,9 @@ int map[20][60];
 %token VARIABLE
 %token PUT
 %token GET
+%token DOOR
+%token KEY
+%token GATE
 %token INCREMENT
 %token DECREMENT
 %token QUIT
@@ -38,13 +44,40 @@ int map[20][60];
 %token SUPEGAL
 %token ET
 %token OU
-%token LEVEL END
+%token LEVEL 
+%token END
 
 %type<entier> ENTIER GET addition soustraction multiplication division moins expression
 %type<str> VARIABLE niveau end
 %type<tree> expression
 
 %%
+niveau:
+    LEVEL programme END{
+        printf("Found a level\n");
+        if(setlocale(LC_ALL, "") == NULL)printf("setlocale failed.\n");
+        level_t level;
+        level_init(&level);  
+        // int i,j;
+        // for (int i = 0; i < HEIGHT; i++)
+        // {
+        //     for (int j = 0; j < WIDTH; j++)
+        //     {
+        //         if (map[i][j] >= 10)
+        //         {
+        //             printf("%d", map[i][j]);
+        //         }
+        //         else
+        //         {
+        //             printf("%d ", map[i][j]);
+        //         }
+        //     }
+        //     printf("\n");
+        // }
+        draw_map(&level);
+        level_display(&level);
+    }        
+    ;
 
 programme: addition '\n' {
         if(erreur==ERR_DIV_0){
@@ -56,9 +89,7 @@ programme: addition '\n' {
           symbole_erreur=NULL;
           erreur=0;
         }else{
-          
           tree_t *tr = $<tree>1;
-          
           if(tr->isbool == 1){
             if(evaluated_tree(tr) == 1){
               printf("Vrai\n");
@@ -165,6 +196,9 @@ expression: VARIABLE {
             | ENTIER { tree_t *t = create_tree('n',$1,NULL,0); t->value.integer = $1; $$ = t;}
             | PUT '(' expression ',' expression ','expression')' { $$ =create_tree('n',put(evaluated_tree($<tree>3),evaluated_tree($<tree>5),evaluated_tree($<tree>7)),NULL,0); }
             | GET '(' expression ',' expression ')' { $$ = create_tree('n',get(evaluated_tree($<tree>3),evaluated_tree($<tree>5)),NULL,0); }
+            | DOOR '(' expression ')' { $$ = create_tree('n',door(evaluated_tree($<tree>3)),NULL,0); }
+            | GATE  '(' expression ')' { $$ = create_tree('n',gate(evaluated_tree($<tree>3)),NULL,0); }
+            | KEY  '(' expression ')' { $$ = create_tree('n',key(evaluated_tree($<tree>3)),NULL,0); }
             | '(' addition ')' { $$ = $<tree>2; }
             | VARIABLE INCREMENT { 
               symbol_t var;
@@ -228,26 +262,16 @@ expression: VARIABLE {
               $$ = ou;
             }
   
-niveau:
-    LEVEL end{
-        printf("Found a level\n");
-    }
-    | LEVEL error{
-        fprintf(stderr, "Error at line %d: %s\n", yylineno, "Niveau non terminé");
-        exit(EXIT_FAILURE);
-    };
-end:
-    END{
-    }
-    ;
+
 %%
 
 int put(int x,int y,int z){
   if(x>20 || x<0 || y>60 || y<0){
-    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Coordonnées incorrectes");
-    return PUT_REJ;
+  fprintf(stderr, "Error at line %d: %s\n", yylineno, "Coordonnées incorrectes");
+  return PUT_REJ;
   }else{
     map[x][y]=z;
+
     return PUT_ACC;
   }
 }
@@ -258,4 +282,85 @@ int get(int x,int y){
   }else{
     return map[x][y];
   }
+}
+int door(int x){
+  if(x>99 || x<1){
+    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Clé incorrecte");
+    exit(EXIT_FAILURE);
+  }else{
+    return 300 + x;
+  }
+}
+int key(int x){
+  if(x>4 || x<0){
+    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Clé incorrecte");
+    exit(EXIT_FAILURE);
+  }else{
+    return 20 + x;
+  }
+}
+int gate(int x){
+   if(x>4 || x<0){
+    fprintf(stderr, "Error at line %d: %s\n", yylineno, "Clé incorrecte");
+    exit(EXIT_FAILURE);
+  }else{
+    return 10 + x;
+  }
+}
+int get_nb_line(){
+  return yylineno;
+}
+void draw_map(level_t *level)
+{
+    int x, y;
+    for (x = 0; x < 20; x++)
+    {
+        for (y = 0; y < 60; y++)
+        {
+            switch (map[x][y])
+            {
+            case 1:
+                level_add_block(level, y, x);
+                break;
+            case 7:
+                level_add_robot(level, y, x);
+                break;
+            case 6:
+                level_add_probe(level, y, x);
+                break;
+            case 0:
+                // level_add_empty(level, y, x);
+                break;
+            case 4:
+                level_add_trap(level, y, x);
+                break;
+            case 5:
+                level_add_ladder(level, y, x);
+                break;
+            case 3:
+                level_add_bomb(level, y, x);
+                break;
+            case 2:
+                level_add_life(level, y, x);
+                break;
+            case 21 ... 24:
+                level_add_key(level, y, x, map[x][y] - 20);
+                break;
+            case 11 ... 14:
+                level_add_gate(level, y, x, map[x][y] - 10);
+                break;
+            case 301 ... 399:
+                level_add_door(level, y, x, map[x][y] - 300);
+                break;
+            case 9:
+                level_add_start(level, y, x);
+                break;
+            case 8:
+                level_add_exit(level, y, x);
+                break;
+            default:
+                break;
+            }
+        }
+    }
 }

@@ -4,7 +4,7 @@
 
 EXEC = main
 ANALYSER = analyser
-OBJECTS = lex.yy.o y.tab.o hach_table.o tree.o List.o 
+OBJECTS = lex.yy.o y.tab.o hach_table.o tree.o List.o level.o
 PROJECT_NAME = main
 
 #
