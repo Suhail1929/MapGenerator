@@ -28,6 +28,7 @@ CC = gcc
 CCFLAGS_STD = -Wall -Werror
 CCFLAGS_DEBUG = -D _DEBUG_ 
 CCFLAGS = $(CCFLAGS_STD)
+GDBFLAG = -g
 CCLIBS = -lfl
 YACCFLAGS = -d
 
@@ -45,7 +46,7 @@ all: msg $(OBJECTS) $(EXEC_O)
 msg:
 	@echo "Create objects..."
 
-debug: CCFLAGS = $(CCFLAGS_STD) $(CCFLAGS_DEBUG)
+debug: CCFLAGS = $(CCFLAGS_STD) $(CCFLAGS_DEBUG) $(GDBFLAG)
 debug: all
 
 #

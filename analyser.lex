@@ -28,36 +28,36 @@ DELETE { yylval.entier=0; return ENTIER; }
 LIFE { yylval.entier=2; return ENTIER; }
 BOMB { yylval.entier=3; return ENTIER; }
 TRAP { yylval.entier=4; return ENTIER; }
-GATE {return GATE; }
+GATE {return gate_; }
 LADDER { yylval.entier=5; return ENTIER; }
-KEY {return KEY; }
+KEY {return key_; }
 PROBE { yylval.entier=6; return ENTIER; }
 ROBOT { yylval.entier=7; return ENTIER; }
-DOOR {return DOOR; }
+DOOR {return door_; }
 EXIT { yylval.entier=8; return ENTIER; }
 START { yylval.entier=9; return ENTIER; }
 PLAYER { yylval.entier=40; return ENTIER; }
-level { return LEVEL; }
-end { return END; }
-put { return PUT; }
-get { return GET; }
+level { return level_; }
+end { return end; }
+put { return put_; }
+get { return get_; }
 if  { return IF; }
 else  { return ELSE; }
-endif  { return ENDIF; }
-"++" { return INCREMENT; }
-"--" { return DECREMENT; }
-"==" { return EGAL; }
-"<>" { return DIFFERENT; }
-"<=" { return INFEGAL; }
-">=" { return SUPEGAL; }
-"AND" { return ET; }
-"OR" { return OU; }
+endif  { return endif; }
+"++" { return incr; }
+"--" { return decr; }
+"==" { return egal; }
+"<>" { return diff; }
+"<=" { return infegal; }
+">=" { return supegal; }
+"AND" { return et; }
+"OR" { return ou; }
 [\n] { yylineno++;return *yytext;}
-"quit" { return QUIT; }
-[a-zA-Z]+ { yylval.str = (char*)malloc((strlen(yytext)+1)*sizeof(char)); strcpy(yylval.str,yytext); return VARIABLE; }
+"quit" { return quit; }
+[a-zA-Z]+ { yylval.str = (char*)malloc((strlen(yytext)+1)*sizeof(char)); strcpy(yylval.str,yytext); return variable; }
 [-+*/<>\(\)=,]	 { return *yytext; }
-[ \t]	 ;
-
+[ \t]	 {}
+[[:space:]] ;
 .        yyerror("Caractère non valide");
 
 %%

@@ -16,7 +16,7 @@ void yyerror(const char *erreurMsg)
     exit(EXIT_FAILURE);
 }
 
-int put(int x, int y, int z)
+int put(int y, int x, int z)
 {
     if (x > 20 || x < 0 || y > 60 || y < 0)
     {

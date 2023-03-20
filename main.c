@@ -10,19 +10,17 @@ extern int yyparse();
 extern FILE *yyin;
 int main(int argc, char *argv[])
 {
-    // if (setlocale(LC_ALL, "") == NULL)
-    //     printf("setlocale failed.\n");
-    // if (argc != 2)
-    // {
-    //     printf("Usage: %s <file>\n", argv[0]);
-    //     return EXIT_FAILURE;
-    // }
-    // yyin = fopen(argv[1], "r");
-    // if (yyin == NULL)
-    // {
-    //     printf("Erreur d'ouverture du fichier %s\n", argv[1]);
-    //     return EXIT_FAILURE;
-    // }
+    if (argc != 2)
+    {
+        printf("Usage: %s <file>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+    yyin = fopen(argv[1], "r");
+    if (yyin == NULL)
+    {
+        printf("Erreur d'ouverture du fichier %s\n", argv[1]);
+        return EXIT_FAILURE;
+    }
 
     init_hachtable(&table, TAILLE_TABLE);
     // printf("debug1\n");

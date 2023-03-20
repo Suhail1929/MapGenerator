@@ -23,35 +23,39 @@ char *symbole_erreur = NULL;
 }
 
 %token ENTIER
-%token VARIABLE
-%token PUT
-%token GET
-%token DOOR
-%token KEY
-%token GATE
-%token INCREMENT
-%token DECREMENT
-%token QUIT
-%token EGAL
-%token DIFFERENT
-%token INFEGAL
-%token SUPEGAL
-%token ET
-%token OU
-%token LEVEL 
-%token END
+%token variable
+%token put_
+%token get_
+%token door_
+%token key_
+%token gate_
+%token incr
+%token decr
+%token quit
+%token egal
+%token diff
+%token infegal
+%token supegal
+%token et
+%token ou
+%token level_ 
+%token end
 %token IF
 %token ELSE
-%token ENDIF
+%token endif
 
-%type<entier> ENTIER GET
-%type<str> VARIABLE
-%type<tree> expression
-%type<tree_list_t> expr_list
+%type<entier> ENTIER 
+%type<str> variable
+%type<tree> EXPRESSION
+%type<tree_list_t> EXPR_LIST 
 
 %%
-niveau:
-    LEVEL'\n' programme END '\n'{
+LEVELS:
+    LEVEL
+    | LEVELS LEVEL
+    ;
+LEVEL:
+    level_ PROGRAMME end '\n'{
         printf("Found a level\n");
         if(setlocale(LC_ALL, "") == NULL)printf("setlocale failed.\n");
         level_t level;
@@ -59,11 +63,11 @@ niveau:
         draw_map(&level);
         level_display(&level);
         map_init();
-    }niveau
-    | '\n' niveau
+    }
+    | '\n' LEVEL
     ;
 
-programme: expr_list '\n' {
+PROGRAMME: EXPR_LIST  {
               if (erreur == ERR_DIV_0) {
                 printf("Erreur de division par zéro\n");
                 erreur = 0;
@@ -96,15 +100,15 @@ programme: expr_list '\n' {
                 }
               }
             } 
-            | '\n' programme
+            | '\n' PROGRAMME
             | ;
 
-expr_list: expression  {
+EXPR_LIST: EXPRESSION  {
               $<tree_list>$ = malloc(sizeof(tree_list_t));
               $<tree_list>$->tree = $<tree>1;
               $<tree_list>$->next = NULL;
             }
-            | expr_list '\n' expression {
+            | EXPR_LIST '\n' EXPRESSION {
               tree_list_t *e = malloc(sizeof(tree_list_t));
               e->tree = $<tree>3;
               e->next = NULL;
@@ -113,25 +117,26 @@ expr_list: expression  {
                 last = last->next;
               }
               last->next = e;
-            }| 
-              IF '(' expression ')' '\n' expr_list '\n' ELSE '\n' expr_list '\n' ENDIF {
+            }|
+            IF '(' EXPRESSION ')' '\n' EXPR_LIST '\n' ELSE '\n' EXPR_LIST '\n' endif {
               if(evaluated_tree($<tree>3) == 1){
                   $<tree_list>$ = $<tree_list>6;
               }else{
-                  $<tree_list>$ = $<tree_list>9;
+                  $<tree_list>$ = $<tree_list>10;
               }
               }
-              | IF '(' expression ')' '\n' expr_list '\n' ENDIF {
+              | IF '(' EXPRESSION ')' '\n' EXPR_LIST '\n' endif {
                   if(evaluated_tree($<tree>3) == 1){
                       $<tree_list>$ = $<tree_list>6;
                   }else{
                       $<tree_list>$ = NULL;
                   }
-              } ;
+              }
+              |EXPR_LIST '\n' PROGRAMME
+              ;
 
 
-
-expression: VARIABLE {
+EXPRESSION: variable {
               symbol_t var;
               var.type=TYPE_ENTIER;
               var.name=$1;
@@ -146,7 +151,7 @@ expression: VARIABLE {
               }
             }
             |
-             VARIABLE '=' expression {
+             variable '=' EXPRESSION {
               if(erreur==ERR_DIV_0){
                 printf("Erreur de division par zéro\n");
                 erreur=0;
@@ -170,19 +175,19 @@ expression: VARIABLE {
                $$ = create_tree('n',var.value.integer,NULL,0);
               }
               free_tree($<tree>3);
-            }|expression '+' expression  { $$ = create_tree('+',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
-            |expression '-' expression { $$ = create_tree('-',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
-            |expression '*' expression { $$ = create_tree('*',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
-            |expression '/' expression { if($3 != 0){$$ = create_tree('/',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}}
-            |'-'expression { $$ = create_tree('u',0,create_tree_list($<tree>2,NULL),0);}
+            }|EXPRESSION '+' EXPRESSION  { $$ = create_tree('+',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
+            |EXPRESSION '-' EXPRESSION { $$ = create_tree('-',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
+            |EXPRESSION '*' EXPRESSION { $$ = create_tree('*',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
+            |EXPRESSION '/' EXPRESSION { if($3 != 0){$$ = create_tree('/',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}}
+            |'-'EXPRESSION { $$ = create_tree('u',0,create_tree_list($<tree>2,NULL),0);}
             | ENTIER { tree_t *t = create_tree('n',$1,NULL,0); t->value.integer = $1; $$ = t;}
-            | PUT '(' expression ',' expression ','expression')' { $$ =create_tree('P',0,create_tree_list($<tree>3,create_tree_list($<tree>5,create_tree_list($<tree>7,NULL))),0); }
-            | GET '(' expression ',' expression ')' { $$ = create_tree('G',0,create_tree_list($<tree>3,create_tree_list($<tree>5,NULL)),0); }
-            | DOOR '(' expression ')' { $$ = create_tree('n',door(evaluated_tree($<tree>3)),NULL,0); }
-            | GATE  '(' expression ')' { $$ = create_tree('n',gate(evaluated_tree($<tree>3)),NULL,0); }
-            | KEY  '(' expression ')' { $$ = create_tree('n',key(evaluated_tree($<tree>3)),NULL,0); }
-            | '(' addition ')' { $$ = $<tree>2; }
-            | VARIABLE INCREMENT { 
+            | put_ '(' EXPRESSION ',' EXPRESSION ','EXPRESSION')' { $$ =create_tree('P',0,create_tree_list($<tree>3,create_tree_list($<tree>5,create_tree_list($<tree>7,NULL))),0); }
+            | get_ '(' EXPRESSION ',' EXPRESSION ')' { $$ = create_tree('G',0,create_tree_list($<tree>3,create_tree_list($<tree>5,NULL)),0); }
+            | door_ '(' EXPRESSION ')' { $$ = create_tree('n',door(evaluated_tree($<tree>3)),NULL,0); }
+            | gate_  '(' EXPRESSION ')' { $$ = create_tree('n',gate(evaluated_tree($<tree>3)),NULL,0); }
+            | key_  '(' EXPRESSION ')' { $$ = create_tree('n',key(evaluated_tree($<tree>3)),NULL,0); }
+            | '(' EXPRESSION ')' { $$ = create_tree('n',evaluated_tree($<tree>2),NULL,0); }
+            | variable incr { 
               symbol_t var;
               var.type = TYPE_ENTIER;
               var.name = $1;
@@ -196,7 +201,7 @@ expression: VARIABLE {
               }
               free_tree($<tree>1);
               }
-            | VARIABLE DECREMENT {
+            | variable decr {
               symbol_t var;
               var.type = TYPE_ENTIER;
               var.name = $1;
@@ -210,38 +215,38 @@ expression: VARIABLE {
               }
               free_tree($<tree>1);
               }
-            // | QUIT { exit(0); }
-            | expression EGAL expression { 
-              tree_t *egal = create_tree('=',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = egal;
+            // | quit { exit(0); }
+            | EXPRESSION egal EXPRESSION { 
+              tree_t *eg = create_tree('=',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = eg;
             }
-            | expression DIFFERENT expression { 
-              tree_t *diff = create_tree('!',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = diff;
+            | EXPRESSION diff EXPRESSION { 
+              tree_t *dif = create_tree('!',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = dif;
             }
-            | expression '<' expression { 
+            | EXPRESSION '<' EXPRESSION { 
               tree_t *petit = create_tree('<',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
               $$ = petit;
             }
-            | expression '>' expression { 
+            | EXPRESSION '>' EXPRESSION { 
               tree_t *grand = create_tree('>',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
               $$ = grand;
             }
-            | expression INFEGAL expression { 
+            | EXPRESSION infegal EXPRESSION { 
               tree_t *petit = create_tree('I',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
               $$ = petit;
             }
-            | expression SUPEGAL expression { 
+            | EXPRESSION supegal EXPRESSION { 
               tree_t *grand = create_tree('S',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
               $$ = grand;
             }
-            | expression ET expression { 
-              tree_t *et = create_tree('&',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = et;
+            | EXPRESSION et EXPRESSION { 
+              tree_t *e = create_tree('&',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = e;
             }
-            | expression OU expression { 
-              tree_t *ou = create_tree('|',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = ou;
+            | EXPRESSION ou EXPRESSION { 
+              tree_t *o = create_tree('|',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
+              $$ = o;
             }
   
 
