@@ -18,6 +18,7 @@ char *symbole_erreur = NULL;
 %union{
   char* str;
   int entier;
+  tree_list_t* tree_list;
   tree_t* tree;
 }
 
@@ -39,10 +40,14 @@ char *symbole_erreur = NULL;
 %token OU
 %token LEVEL 
 %token END
+%token IF
+%token ELSE
+%token ENDIF
 
-%type<entier> ENTIER GET addition soustraction multiplication division moins expression
+%type<entier> ENTIER GET
 %type<str> VARIABLE
 %type<tree> expression
+%type<tree_list_t> expr_list
 
 %%
 niveau:
@@ -50,7 +55,6 @@ niveau:
         printf("Found a level\n");
         if(setlocale(LC_ALL, "") == NULL)printf("setlocale failed.\n");
         level_t level;
-        
         level_init(&level);  
         draw_map(&level);
         level_display(&level);
@@ -59,104 +63,71 @@ niveau:
     | '\n' niveau
     ;
 
+programme: expr_list '\n' {
+              if (erreur == ERR_DIV_0) {
+                printf("Erreur de division par zéro\n");
+                erreur = 0;
+              } else if (erreur == ERR_SYMBOLE) {
+                printf("Symbole inconnu rencontré : %s\n", symbole_erreur);
+                free(symbole_erreur);
+                symbole_erreur = NULL;
+                erreur = 0;
+              } else {
+                tree_list_t *tree_list = $<tree_list>1;
+                while (tree_list) {
+                  tree_t *tr = tree_list->tree;
+                  if (tr->isbool == 1) {
+                    if (evaluated_tree(tr) == 1) {
+                      printf("Vrai\n");
+                    } else {
+                      printf("Faux\n");
+                    }
+                  } else {
+                    if (evaluated_tree(tr) == PUT_ACC) {
+                      printf("Put effectué\n");
+                    } else if (evaluated_tree(tr) == PUT_REJ) {
+                      printf("ERROR : Put n'est pas effectué\n");
+                    } else {
+                      printf("=%.2f\n", evaluated_tree(tr));
+                      printf("\n");
+                    }
+                  }
+                  tree_list = tree_list->next;
+                }
+              }
+            } 
+            | '\n' programme
+            | ;
 
-programme: addition '\n' {
-        if(erreur==ERR_DIV_0){
-          printf("Erreur de division par zéro\n");
-          erreur=0;
-        }else if(erreur==ERR_SYMBOLE){
-          printf("Symbole inconnu rencontré : %s\n",symbole_erreur);
-          free(symbole_erreur);
-          symbole_erreur=NULL;
-          erreur=0;
-        }else{
-          tree_t *tr = $<tree>1;
-          if(tr->isbool == 1){
-            if(evaluated_tree(tr) == 1){
-              printf("Vrai\n");
-            }else{
-              printf("Faux\n");
+expr_list: expression  {
+              $<tree_list>$ = malloc(sizeof(tree_list_t));
+              $<tree_list>$->tree = $<tree>1;
+              $<tree_list>$->next = NULL;
             }
-          }else{
-            if(evaluated_tree($<tree>1) == PUT_ACC){
-              printf("Put effectué\n");
-            }else if(evaluated_tree($<tree>1) == PUT_REJ){
-              printf("ERROR : Put n'est pas effectué\n");
-            }
-            else{
-              printf("=%lf\n", evaluated_tree($<tree>1));
-              print_tree($<tree>1);
-              printf("\n");
-            }
-          }
-        }
-      } programme
-      | VARIABLE '=' addition '\n' {
-        if(erreur==ERR_DIV_0){
-          printf("Erreur de division par zéro\n");
-          erreur=0;
-        }else if(erreur==ERR_SYMBOLE){
-          printf("Symbole inconnu rencontré : %s\n",symbole_erreur);
-          free(symbole_erreur);
-          symbole_erreur=NULL;
-          erreur=0;
-        }else{
-          symbol_t var;
-          cell_t* c;
-          var.type=TYPE_ENTIER;
-          var.name=$1;
-          var.value.integer=evaluated_tree($<tree>3);
-          c=search_hach(&table,var);
-          if(c==NULL){
-            insert_hach(&table,var);
-          }else{
-            c->var.value.integer=var.value.integer;
-          }
-           printf("=%lf\n", evaluated_tree($<tree>3));
-          print_tree($<tree>3);
-          printf("\n");
-        }
-        free_tree($<tree>1);
-
-      } programme
-      | '\n' programme
-      |
-      ;
-
-addition: addition '+' soustraction {
-        tree_t *add = create_tree('+',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);
-        $<tree>$ = add;
-      }
-      | soustraction;
-
-soustraction: soustraction '-' multiplication {
-        tree_t *sous = create_tree('-',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);
-        $<tree>$ = sous;
-      }
-      | multiplication;
-
-multiplication: multiplication '*' division {
-        tree_t *mult = create_tree('*',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);
-        $<tree>$ = mult;
-      }
-      | division;
-
-division: division '/' moins {
-        if($3!=0){
-          tree_t *div = create_tree('/',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);
-          $<tree>$ = div;
-        }else{
-          if(erreur==0) erreur=ERR_DIV_0;
-        }
-      }
-      | moins;
-
-moins: '-' expression {
-        tree_t *moins = create_tree('u',0,create_tree_list($<tree>2,NULL),0);
-        $<tree>$ = moins;
-  }
-  | expression;
-
+            | expr_list '\n' expression {
+              tree_list_t *e = malloc(sizeof(tree_list_t));
+              e->tree = $<tree>3;
+              e->next = NULL;
+              tree_list_t *last = $<tree_list>1;
+              while (last->next) {
+                last = last->next;
+              }
+              last->next = e;
+            }| 
+              IF '(' expression ')' '\n' expr_list '\n' ELSE '\n' expr_list '\n' ENDIF {
+              if(evaluated_tree($<tree>3) == 1){
+                  $<tree_list>$ = $<tree_list>6;
+              }else{
+                  $<tree_list>$ = $<tree_list>9;
+              }
+              }
+              | IF '(' expression ')' '\n' expr_list '\n' ENDIF {
+                  if(evaluated_tree($<tree>3) == 1){
+                      $<tree_list>$ = $<tree_list>6;
+                  }else{
+                      $<tree_list>$ = NULL;
+                  }
+              } ;
 
 
 
@@ -174,9 +145,39 @@ expression: VARIABLE {
                 $$ = create_tree('n',c->var.value.integer,NULL,0);
               }
             }
+            |
+             VARIABLE '=' expression {
+              if(erreur==ERR_DIV_0){
+                printf("Erreur de division par zéro\n");
+                erreur=0;
+              }else if(erreur==ERR_SYMBOLE){
+                printf("Symbole inconnu rencontré : %s\n",symbole_erreur);
+                free(symbole_erreur);
+                symbole_erreur=NULL;
+                erreur=0;
+              }else{
+                symbol_t var;
+                cell_t* c;
+                var.type=TYPE_ENTIER;
+                var.name=$1;
+                var.value.integer=evaluated_tree($<tree>3);
+                c=search_hach(&table,var);
+                if(c==NULL){
+                  insert_hach(&table,var);
+                }else{
+                  c->var.value.integer=var.value.integer;
+                }
+               $$ = create_tree('n',var.value.integer,NULL,0);
+              }
+              free_tree($<tree>3);
+            }|expression '+' expression  { $$ = create_tree('+',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
+            |expression '-' expression { $$ = create_tree('-',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
+            |expression '*' expression { $$ = create_tree('*',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
+            |expression '/' expression { if($3 != 0){$$ = create_tree('/',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}}
+            |'-'expression { $$ = create_tree('u',0,create_tree_list($<tree>2,NULL),0);}
             | ENTIER { tree_t *t = create_tree('n',$1,NULL,0); t->value.integer = $1; $$ = t;}
-            | PUT '(' expression ',' expression ','expression')' { $$ =create_tree('n',put(evaluated_tree($<tree>3),evaluated_tree($<tree>5),evaluated_tree($<tree>7)),NULL,0); }
-            | GET '(' expression ',' expression ')' { $$ = create_tree('n',get(evaluated_tree($<tree>3),evaluated_tree($<tree>5)),NULL,0); }
+            | PUT '(' expression ',' expression ','expression')' { $$ =create_tree('P',0,create_tree_list($<tree>3,create_tree_list($<tree>5,create_tree_list($<tree>7,NULL))),0); }
+            | GET '(' expression ',' expression ')' { $$ = create_tree('G',0,create_tree_list($<tree>3,create_tree_list($<tree>5,NULL)),0); }
             | DOOR '(' expression ')' { $$ = create_tree('n',door(evaluated_tree($<tree>3)),NULL,0); }
             | GATE  '(' expression ')' { $$ = create_tree('n',gate(evaluated_tree($<tree>3)),NULL,0); }
             | KEY  '(' expression ')' { $$ = create_tree('n',key(evaluated_tree($<tree>3)),NULL,0); }

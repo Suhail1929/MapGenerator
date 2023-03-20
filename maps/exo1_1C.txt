@@ -1,11 +1,3 @@
 level
-end
-
-level
-end
-
-level
-end
-
-level
+a=8
 end

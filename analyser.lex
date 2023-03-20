@@ -41,6 +41,9 @@ level { return LEVEL; }
 end { return END; }
 put { return PUT; }
 get { return GET; }
+if  { return IF; }
+else  { return ELSE; }
+endif  { return ENDIF; }
 "++" { return INCREMENT; }
 "--" { return DECREMENT; }
 "==" { return EGAL; }
@@ -49,7 +52,7 @@ get { return GET; }
 ">=" { return SUPEGAL; }
 "AND" { return ET; }
 "OR" { return OU; }
-\n { yylineno++;return *yytext;}
+[\n] { yylineno++;return *yytext;}
 "quit" { return QUIT; }
 [a-zA-Z]+ { yylval.str = (char*)malloc((strlen(yytext)+1)*sizeof(char)); strcpy(yylval.str,yytext); return VARIABLE; }
 [-+*/<>\(\)=,]	 { return *yytext; }

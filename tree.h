@@ -6,7 +6,7 @@ typedef struct tree_list_t tree_list_t;
 
 struct tree_t
 {
-    char type; // 0 = entier, 1 = opérateur, 2 = fonction
+    char type; // n = entier, f = fonction
     int isbool;
     union
     {

@@ -1,6 +1,13 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include "List.h"
+#include "hach_table.h"
+#include <wchar.h>
+#include <locale.h>
+#include "level.h"
+#include "include.h"
 #include "tree.h"
 // Create a new tree node with the specified type and value
 tree_t *create_tree(char type, int val, tree_list_t *child, int isbool)
@@ -78,7 +85,7 @@ double evaluated_tree(tree_t *root)
 
     case '/':
         res = evaluated_tree(root->value.children->tree);
-        child = root->value.children;
+        child = root->value.children->next;
         while (child != NULL)
         {
             res /= evaluated_tree(child->tree);
@@ -101,6 +108,10 @@ double evaluated_tree(tree_t *root)
         return evaluated_tree(root->value.children->tree) && evaluated_tree(root->value.children->next->tree);
     case '|':
         return evaluated_tree(root->value.children->tree) || evaluated_tree(root->value.children->next->tree);
+    case 'P':
+        return put(evaluated_tree(root->value.children->tree), evaluated_tree(root->value.children->next->tree), evaluated_tree(root->value.children->next->next->tree));
+    case 'G':
+        return get(evaluated_tree(root->value.children->tree), evaluated_tree(root->value.children->next->tree));
     default:
         break;
     }
