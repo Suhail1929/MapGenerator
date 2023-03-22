@@ -29,17 +29,19 @@ void delete_hach(hach_t *t, cell_t *c)
 
 unsigned long ch_to_int(char *str)
 {
-  unsigned long mul = 1, size = strlen(str);
-  unsigned long res = 0;
+  const unsigned long FNV_offset_basis = 14695981039346656037UL;
+  const unsigned long FNV_prime = 1099511628211UL;
+
+  unsigned long hash = FNV_offset_basis;
   int i;
 
-  for (i = size - 1; i >= 0; --i)
+  for (i = 0; str[i] != '\0'; ++i)
   {
-    res += mul * str[i];
-    mul *= 128;
+    hash ^= (unsigned long)str[i];
+    hash *= FNV_prime;
   }
 
-  return res;
+  return hash;
 }
 
 void init_hachtable(hach_t *t, int size)
@@ -72,14 +74,4 @@ void display_hachtable(hach_t *t)
     printf("Liste %d :", i);
     display_list(&t->tab[i]);
   }
-}
-
-int count_hachtable(hach_t *t)
-{
-  int count = 0, i;
-  for (i = 0; i < t->size; ++i)
-  {
-    count += count_list(&t->tab[i]);
-  }
-  return count;
 }

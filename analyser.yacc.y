@@ -22,6 +22,8 @@ char *symbole_erreur = NULL;
   tree_t* tree;
 }
 
+
+
 %token ENTIER
 %token variable
 %token put_
@@ -43,19 +45,30 @@ char *symbole_erreur = NULL;
 %token IF
 %token ELSE
 %token endif
+%token FOR
+%token endfor
 
-%type<entier> ENTIER 
+%type<entier> ENTIER
+%type<entier> BOOLEEN
 %type<str> variable
 %type<tree> EXPRESSION
-%type<tree_list_t> EXPR_LIST 
+%type<tree> VARIABLE
+%type<tree_list_t> INSTR_LIST 
+%type<tree_list_t> CONDITION 
+%type<tree_list_t> FORLOOP
+
+%left '='
+%left '*' '/' 
+%left '+' '-'
+%left '<' '>' '!' '&' '|' 'i'
+%left ou
+%left et
+%left egal diff
+%left infegal supegal
 
 %%
-LEVELS:
-    LEVEL
-    | LEVELS LEVEL
-    ;
 LEVEL:
-    level_ PROGRAMME end '\n'{
+    level_ PROGRAMME end{
         printf("Found a level\n");
         if(setlocale(LC_ALL, "") == NULL)printf("setlocale failed.\n");
         level_t level;
@@ -64,10 +77,10 @@ LEVEL:
         level_display(&level);
         map_init();
     }
-    | '\n' LEVEL
+    | LEVEL
     ;
 
-PROGRAMME: EXPR_LIST  {
+PROGRAMME: INSTR_LIST  {
               if (erreur == ERR_DIV_0) {
                 printf("Erreur de division par zéro\n");
                 erreur = 0;
@@ -81,62 +94,94 @@ PROGRAMME: EXPR_LIST  {
                 while (tree_list) {
                   tree_t *tr = tree_list->tree;
                   if (tr->isbool == 1) {
-                    if (evaluated_tree(tr) == 1) {
+                    if (calculate_expression(tr) == 1) {
                       printf("Vrai\n");
                     } else {
                       printf("Faux\n");
                     }
                   } else {
-                    if (evaluated_tree(tr) == PUT_ACC) {
+                    if (calculate_expression(tr) == PUT_ACC) {
                       printf("Put effectué\n");
-                    } else if (evaluated_tree(tr) == PUT_REJ) {
+                    } else if (calculate_expression(tr) == PUT_REJ) {
                       printf("ERROR : Put n'est pas effectué\n");
                     } else {
-                      printf("=%.2f\n", evaluated_tree(tr));
+                      printf("=%.2f\n", calculate_expression(tr));
                       printf("\n");
                     }
                   }
                   tree_list = tree_list->next;
                 }
               }
-            } 
-            | '\n' PROGRAMME
-            | ;
+            };
+            
 
-EXPR_LIST: EXPRESSION  {
+INSTR_LIST: EXPRESSION  {
               $<tree_list>$ = malloc(sizeof(tree_list_t));
               $<tree_list>$->tree = $<tree>1;
               $<tree_list>$->next = NULL;
             }
-            | EXPR_LIST '\n' EXPRESSION {
+            | INSTR_LIST EXPRESSION {
               tree_list_t *e = malloc(sizeof(tree_list_t));
-              e->tree = $<tree>3;
+              e->tree = $<tree>2;
               e->next = NULL;
               tree_list_t *last = $<tree_list>1;
               while (last->next) {
                 last = last->next;
               }
               last->next = e;
-            }|
-            IF '(' EXPRESSION ')' '\n' EXPR_LIST '\n' ELSE '\n' EXPR_LIST '\n' endif {
-              if(evaluated_tree($<tree>3) == 1){
-                  $<tree_list>$ = $<tree_list>6;
+            }| CONDITION
+            | INSTR_LIST CONDITION {
+              tree_list_t *last = $<tree_list>1;
+              while (last->next) {
+                last = last->next;
+              }
+              last->next = $<tree_list>2;
+            }
+            | FORLOOP
+            | INSTR_LIST FORLOOP {
+              tree_list_t *last = $<tree_list>1;
+              while (last->next) {
+                last = last->next;
+              }
+              last->next = $<tree_list>2;
+              }
+              ;
+
+CONDITION:   IF '(' BOOLEEN ')' INSTR_LIST ELSE INSTR_LIST endif {
+              if($3== 1){
+                  $<tree_list>$ = $<tree_list>5;
               }else{
-                  $<tree_list>$ = $<tree_list>10;
+                  $<tree_list>$ = $<tree_list>7;
               }
               }
-              | IF '(' EXPRESSION ')' '\n' EXPR_LIST '\n' endif {
-                  if(evaluated_tree($<tree>3) == 1){
-                      $<tree_list>$ = $<tree_list>6;
+              |  IF '(' BOOLEEN ')' INSTR_LIST endif {
+                  if($3== 1){
+                      $<tree_list>$ = $<tree_list>5;
                   }else{
                       $<tree_list>$ = NULL;
                   }
-              }
-              |EXPR_LIST '\n' PROGRAMME
-              ;
+              };
+
+FORLOOP : FOR '(' VARIABLE ',' ENTIER ',' ENTIER ',' ENTIER ')' INSTR_LIST endfor {
+                tree_list_t *current_list = $<tree_list>11;
+                tree_list_t *new_list = NULL;
+                for (int i = $5; i < $7; i += $9) {
+                  if(new_list == NULL){
+                    new_list=current_list;
+                  }else{
+                    while(new_list->next){
+                        new_list = current_list->next;
+                    }
+                    printf("debug\n");
+                    new_list->next = current_list;
+                  }
+                }
+                display_tree_list(new_list);
+               $<tree_list>$ = new_list ;
+          };
 
 
-EXPRESSION: variable {
+VARIABLE : variable {
               symbol_t var;
               var.type=TYPE_ENTIER;
               var.name=$1;
@@ -147,7 +192,7 @@ EXPRESSION: variable {
                 if(symbole_erreur!=NULL) free(symbole_erreur);
                 symbole_erreur=$1;
               }else{
-                $$ = create_tree('n',c->var.value.integer,NULL,0);
+                $$ = create_tree('i',c->var.value.integer,NULL,0);
               }
             }
             |
@@ -165,28 +210,30 @@ EXPRESSION: variable {
                 cell_t* c;
                 var.type=TYPE_ENTIER;
                 var.name=$1;
-                var.value.integer=evaluated_tree($<tree>3);
+                var.value.integer=calculate_expression($<tree>3);
                 c=search_hach(&table,var);
                 if(c==NULL){
                   insert_hach(&table,var);
                 }else{
                   c->var.value.integer=var.value.integer;
                 }
-               $$ = create_tree('n',var.value.integer,NULL,0);
+               $$ = create_tree('i',var.value.integer,NULL,0);
               }
               free_tree($<tree>3);
-            }|EXPRESSION '+' EXPRESSION  { $$ = create_tree('+',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
+            };
+
+EXPRESSION:  VARIABLE
+            |EXPRESSION '+' EXPRESSION  { $$ = create_tree('+',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
             |EXPRESSION '-' EXPRESSION { $$ = create_tree('-',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
             |EXPRESSION '*' EXPRESSION { $$ = create_tree('*',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}
             |EXPRESSION '/' EXPRESSION { if($3 != 0){$$ = create_tree('/',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),0);}}
-            |'-'EXPRESSION { $$ = create_tree('u',0,create_tree_list($<tree>2,NULL),0);}
-            | ENTIER { tree_t *t = create_tree('n',$1,NULL,0); t->value.integer = $1; $$ = t;}
+            | ENTIER { tree_t *t = create_tree('i',$1,NULL,0); t->value.integer = $1; $$ = t;}
             | put_ '(' EXPRESSION ',' EXPRESSION ','EXPRESSION')' { $$ =create_tree('P',0,create_tree_list($<tree>3,create_tree_list($<tree>5,create_tree_list($<tree>7,NULL))),0); }
             | get_ '(' EXPRESSION ',' EXPRESSION ')' { $$ = create_tree('G',0,create_tree_list($<tree>3,create_tree_list($<tree>5,NULL)),0); }
-            | door_ '(' EXPRESSION ')' { $$ = create_tree('n',door(evaluated_tree($<tree>3)),NULL,0); }
-            | gate_  '(' EXPRESSION ')' { $$ = create_tree('n',gate(evaluated_tree($<tree>3)),NULL,0); }
-            | key_  '(' EXPRESSION ')' { $$ = create_tree('n',key(evaluated_tree($<tree>3)),NULL,0); }
-            | '(' EXPRESSION ')' { $$ = create_tree('n',evaluated_tree($<tree>2),NULL,0); }
+            | door_ '(' EXPRESSION ')' { $$ = create_tree('i',door(calculate_expression($<tree>3)),NULL,0); }
+            | gate_  '(' EXPRESSION ')' { $$ = create_tree('i',gate(calculate_expression($<tree>3)),NULL,0); }
+            | key_  '(' EXPRESSION ')' { $$ = create_tree('i',key(calculate_expression($<tree>3)),NULL,0); }
+            | '(' EXPRESSION ')' { $$ = create_tree('i',calculate_expression($<tree>2),NULL,0); }
             | variable incr { 
               symbol_t var;
               var.type = TYPE_ENTIER;
@@ -197,7 +244,7 @@ EXPRESSION: variable {
               exit(1);
               }else{
               c->var.value.integer++;
-              $$ = create_tree('n',c->var.value.integer,NULL,0);
+              $$ = create_tree('i',c->var.value.integer,NULL,0);
               }
               free_tree($<tree>1);
               }
@@ -211,43 +258,54 @@ EXPRESSION: variable {
               exit(1);
               }else{
               c->var.value.integer--;
-              $$ = create_tree('n',c->var.value.integer,NULL,0);
+              $$ = create_tree('i',c->var.value.integer,NULL,0);
               }
               free_tree($<tree>1);
               }
-            // | quit { exit(0); }
-            | EXPRESSION egal EXPRESSION { 
+              ;
+BOOLEEN:     EXPRESSION egal EXPRESSION { 
               tree_t *eg = create_tree('=',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = eg;
+              $$ = calculate_expression(eg);
             }
             | EXPRESSION diff EXPRESSION { 
               tree_t *dif = create_tree('!',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = dif;
+              $$ = calculate_expression(dif);
             }
             | EXPRESSION '<' EXPRESSION { 
               tree_t *petit = create_tree('<',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = petit;
+              $$ = calculate_expression(petit);
             }
             | EXPRESSION '>' EXPRESSION { 
               tree_t *grand = create_tree('>',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = grand;
+              $$ = calculate_expression(grand);
             }
             | EXPRESSION infegal EXPRESSION { 
               tree_t *petit = create_tree('I',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = petit;
+              $$ = calculate_expression(petit);
             }
-            | EXPRESSION supegal EXPRESSION { 
+            | EXPRESSION supegal EXPRESSION {
               tree_t *grand = create_tree('S',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = grand;
+              $$ = calculate_expression(grand);
             }
             | EXPRESSION et EXPRESSION { 
               tree_t *e = create_tree('&',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = e;
+              $$ = calculate_expression(e);
             }
             | EXPRESSION ou EXPRESSION { 
               tree_t *o = create_tree('|',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = o;
+              $$ = calculate_expression(o);
             }
+            | ENTIER {
+              if(ENTIER==0){
+                $$ = 0;
+             }else{
+                $$ = 1;
+             }
+             }
+            | VARIABLE{
+              $$ = calculate_expression($<tree>1);
+            }
+            ;
   
 
 %%

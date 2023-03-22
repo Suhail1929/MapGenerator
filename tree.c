@@ -15,7 +15,7 @@ tree_t *create_tree(char type, int val, tree_list_t *child, int isbool)
     tree_t *node = (tree_t *)malloc(sizeof(tree_t));
     node->type = type;
     node->isbool = isbool;
-    if (node->type == 'n')
+    if (node->type == 'i')
     {
         node->value.integer = val;
     }
@@ -44,7 +44,7 @@ tree_list_t *create_tree_list(tree_t *tree, tree_list_t *child)
     return list;
 }
 
-double evaluated_tree(tree_t *root)
+double calculate_expression(tree_t *root)
 {
     if (root == NULL)
         return -1;
@@ -52,24 +52,22 @@ double evaluated_tree(tree_t *root)
     tree_list_t *child;
     switch (root->type)
     {
-    case 'n':
+    case 'i':
         return root->value.integer;
-    case 'u':
-        return -evaluated_tree(root->value.children->tree);
     case '+':
         child = root->value.children;
         while (child != NULL)
         {
-            res += evaluated_tree(child->tree);
+            res += calculate_expression(child->tree);
             child = child->next;
         }
         return res;
     case '-':
-        res = evaluated_tree(root->value.children->tree);
+        res = calculate_expression(root->value.children->tree);
         child = root->value.children->next;
         while (child != NULL)
         {
-            res -= evaluated_tree(child->tree);
+            res -= calculate_expression(child->tree);
             child = child->next;
         }
         return res;
@@ -78,40 +76,40 @@ double evaluated_tree(tree_t *root)
         child = root->value.children;
         while (child != NULL)
         {
-            res *= evaluated_tree(child->tree);
+            res *= calculate_expression(child->tree);
             child = child->next;
         }
         return res;
 
     case '/':
-        res = evaluated_tree(root->value.children->tree);
+        res = calculate_expression(root->value.children->tree);
         child = root->value.children->next;
         while (child != NULL)
         {
-            res /= evaluated_tree(child->tree);
+            res /= calculate_expression(child->tree);
             child = child->next;
         }
         return res;
     case '<':
-        return evaluated_tree(root->value.children->tree) < evaluated_tree(root->value.children->next->tree);
+        return calculate_expression(root->value.children->tree) < calculate_expression(root->value.children->next->tree);
     case '>':
-        return evaluated_tree(root->value.children->tree) > evaluated_tree(root->value.children->next->tree);
+        return calculate_expression(root->value.children->tree) > calculate_expression(root->value.children->next->tree);
     case 'I':
-        return evaluated_tree(root->value.children->tree) <= evaluated_tree(root->value.children->next->tree);
+        return calculate_expression(root->value.children->tree) <= calculate_expression(root->value.children->next->tree);
     case 'S':
-        return evaluated_tree(root->value.children->tree) >= evaluated_tree(root->value.children->next->tree);
+        return calculate_expression(root->value.children->tree) >= calculate_expression(root->value.children->next->tree);
     case '=':
-        return evaluated_tree(root->value.children->tree) == evaluated_tree(root->value.children->next->tree);
+        return calculate_expression(root->value.children->tree) == calculate_expression(root->value.children->next->tree);
     case '!':
-        return evaluated_tree(root->value.children->tree) != evaluated_tree(root->value.children->next->tree);
+        return calculate_expression(root->value.children->tree) != calculate_expression(root->value.children->next->tree);
     case '&':
-        return evaluated_tree(root->value.children->tree) && evaluated_tree(root->value.children->next->tree);
+        return calculate_expression(root->value.children->tree) && calculate_expression(root->value.children->next->tree);
     case '|':
-        return evaluated_tree(root->value.children->tree) || evaluated_tree(root->value.children->next->tree);
+        return calculate_expression(root->value.children->tree) || calculate_expression(root->value.children->next->tree);
     case 'P':
-        return put(evaluated_tree(root->value.children->tree), evaluated_tree(root->value.children->next->tree), evaluated_tree(root->value.children->next->next->tree));
+        return put(calculate_expression(root->value.children->tree), calculate_expression(root->value.children->next->tree), calculate_expression(root->value.children->next->next->tree));
     case 'G':
-        return get(evaluated_tree(root->value.children->tree), evaluated_tree(root->value.children->next->tree));
+        return get(calculate_expression(root->value.children->tree), calculate_expression(root->value.children->next->tree));
     default:
         break;
     }
@@ -119,11 +117,11 @@ double evaluated_tree(tree_t *root)
 }
 
 // Traverse the tree and print the values of all nodes
-void print_tree(tree_t *root)
+void display_tree(tree_t *root)
 {
     switch (root->type)
     {
-    case 'n':
+    case 'i':
         printf("%d ", root->value.integer);
         break;
     case '+':
@@ -134,7 +132,7 @@ void print_tree(tree_t *root)
         tree_list_t *child = root->value.children;
         while (child != NULL)
         {
-            print_tree(child->tree);
+            display_tree(child->tree);
             child = child->next;
         }
         break;
@@ -142,16 +140,27 @@ void print_tree(tree_t *root)
         break;
     }
 }
-void free_tree(tree_t *arbre)
+
+void display_tree_list(tree_list_t *root)
 {
-    if (!arbre)
+    while (root != NULL)
+    {
+        printf("%c ", root->tree->type);
+        root = root->next;
+    }
+    printf("\n");
+}
+
+void free_tree(tree_t *tree)
+{
+    if (!tree)
     {
         return;
     }
 
-    if (arbre->type != 'n')
+    if (tree->type != 'i')
     {
-        tree_list_t *current = arbre->value.children;
+        tree_list_t *current = tree->value.children;
         while (current)
         {
             free_tree(current->tree);
@@ -160,5 +169,5 @@ void free_tree(tree_t *arbre)
             current = next;
         }
     }
-    free(arbre);
+    free(tree);
 }

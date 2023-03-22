@@ -35,7 +35,7 @@ PROBE { yylval.entier=6; return ENTIER; }
 ROBOT { yylval.entier=7; return ENTIER; }
 DOOR {return door_; }
 EXIT { yylval.entier=8; return ENTIER; }
-START { yylval.entier=9; return ENTIER; }
+ENTER { yylval.entier=9; return ENTIER; }
 PLAYER { yylval.entier=40; return ENTIER; }
 level { return level_; }
 end { return end; }
@@ -44,6 +44,8 @@ get { return get_; }
 if  { return IF; }
 else  { return ELSE; }
 endif  { return endif; }
+for { return FOR; }
+endfor { return endfor; }
 "++" { return incr; }
 "--" { return decr; }
 "==" { return egal; }
@@ -52,11 +54,10 @@ endif  { return endif; }
 ">=" { return supegal; }
 "AND" { return et; }
 "OR" { return ou; }
-[\n] { yylineno++;return *yytext;}
+[\n] { yylineno++;}
 "quit" { return quit; }
 [a-zA-Z]+ { yylval.str = (char*)malloc((strlen(yytext)+1)*sizeof(char)); strcpy(yylval.str,yytext); return variable; }
 [-+*/<>\(\)=,]	 { return *yytext; }
-[ \t]	 {}
 [[:space:]] ;
 .        yyerror("Caractère non valide");
 
