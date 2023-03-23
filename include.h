@@ -7,6 +7,7 @@
 #define ERR_SYMBOLE 2
 #define PUT_ACC 25555559
 #define PUT_REJ -25555559
+#define FUNC_ACC 25555558
 
 /**
  * map is a 2D array of int representing the map
@@ -21,9 +22,13 @@ extern int yylineno;
  */
 int yylex();
 /**
- * yyerror is a function that prints an error message
+ * table is the hash table
  */
 hach_t table;
+/**
+ * function_list is the list of functions
+ */
+function_t *function_list;
 /**
  * @brief Get the object at the given coordinates
  *
@@ -31,6 +36,7 @@ hach_t table;
  * @param y
  * @return int
  */
+
 int get(int x, int y);
 /**
  * @brief Put the given object at the given coordinates
@@ -84,4 +90,25 @@ void map_init();
  */
 void yyerror(const char *erreurMsg);
 
+/**
+ * @brief Execute while loop
+ *
+ * @param root
+ * @param child
+ * @return tree_list_t*
+ */
+
+tree_list_t *execute_while(tree_t *booleen, tree_list_t *inst_list);
+/**
+ * @brief Execute for loop
+ *
+ * @param var
+ * @param start
+ * @param end
+ * @param incrementeur
+ * @param inst_list
+ * @return tree_list_t*
+ */
+
+tree_list_t *execute_for(char *name, int start, int end_, int incrementeur, tree_list_t *inst_list);
 #endif

@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "tree.h"
-#include "List.h"
-#include "hach_table.h"
 #include <wchar.h>
 #include <locale.h>
 #include <string.h>
 #include "level.h"
+#include "List.h"
+#include "hach_table.h"
+#include "tree.h"
 #include "include.h"
 
 void yyerror(const char *erreurMsg)
@@ -142,4 +142,87 @@ void draw_map(level_t *level)
             }
         }
     }
+}
+
+tree_list_t *execute_while(tree_t *booleen, tree_list_t *inst_list)
+{
+    tree_list_t *head = NULL;
+    tree_list_t *tail = NULL;
+    int bool_ = calculate_tree(booleen);
+    while (bool_ == 1)
+    {
+        bool_ = calculate_tree(booleen);
+        tree_list_t *curr = inst_list;
+        while (curr != NULL)
+        {
+            tree_t *copied_tree = deep_copy_tree(curr->tree);
+            tree_list_t *new_node = malloc(sizeof(tree_list_t));
+            if (new_node == NULL)
+            {
+                fprintf(stderr, "Erreur : échec de l'allocation de mémoire pour un nouveau noeud de liste chaînée.\n");
+                exit(EXIT_FAILURE);
+            }
+            new_node->tree = copied_tree;
+            new_node->next = NULL;
+            if (tail == NULL)
+            {
+                head = new_node;
+            }
+            else
+            {
+                tail->next = new_node;
+            }
+            tail = new_node;
+            curr = curr->next;
+        }
+    }
+    return head;
+}
+
+tree_list_t *execute_for(char *name, int start, int end_, int incrementeur, tree_list_t *inst_list)
+{
+    tree_list_t *head = NULL;
+    tree_list_t *tail = NULL;
+    for (int i = start; i < end_; i += incrementeur)
+    {
+        symbol_t var;
+        cell_t *c;
+        var.type = TYPE_ENTIER;
+        var.name = name;
+        var.value.integer = i;
+        c = search_hach(&table, var);
+        if (c == NULL)
+        {
+            insert_hach(&table, var);
+        }
+        else
+        {
+            c->var.value.integer = i;
+        }
+        tree_list_t *curr = inst_list;
+        while (curr != NULL)
+        {
+            tree_t *copied_tree = deep_copy_tree(curr->tree);
+            update_variable_in_tree(copied_tree, var.name, i);
+            tree_list_t *new_node = malloc(sizeof(tree_list_t));
+            if (new_node == NULL)
+            {
+                fprintf(stderr, "Erreur : échec de l'allocation de mémoire pour un nouveau noeud de liste chaînée.\n");
+                exit(EXIT_FAILURE);
+            }
+            new_node->tree = copied_tree;
+            new_node->next = NULL;
+            if (tail == NULL)
+            {
+                head = new_node;
+            }
+            else
+            {
+                tail->next = new_node;
+            }
+            tail = new_node;
+            curr = curr->next;
+        }
+    }
+    return head;
 }

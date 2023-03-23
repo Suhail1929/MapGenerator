@@ -1,6 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-
+#ifndef TREE_H
+#define TREE_H
 /**
  * @brief struct of a tree node
  *
@@ -31,6 +30,14 @@ struct tree_list_t
     tree_t *tree;
     tree_list_t *next;
 };
+
+typedef struct function
+{
+    char *name;
+    tree_list_t *params;
+    tree_list_t *instructions;
+    struct function *next;
+} function_t;
 
 /**
  * @brief Create a tree object
@@ -63,7 +70,7 @@ tree_t *create_tree_var(char type, int val, tree_list_t *child, int isbool, char
  * @param parent
  * @param child
  */
-double calculate_expression(tree_t *root);
+double calculate_tree(tree_t *root);
 
 /**
  * @brief Create a tree list object
@@ -128,3 +135,19 @@ void update_variable_in_tree_list(tree_list_t *tree_list, char *name, int value)
  * @param tree
  */
 tree_t *deep_copy_tree(tree_t *tree);
+
+/**
+ * @brief create a function call
+ * @param func_name
+ * @param args
+ * */
+tree_t *create_tree_func_call(char *func_name, tree_list_t *args);
+/**
+ * @brief Create a tree prc call object
+ *
+ * @param func_name
+ * @param args
+ * @return tree_t*
+ */
+tree_t *create_tree_prc_call(char *func_name, tree_list_t *args);
+#endif

@@ -2,10 +2,10 @@
 # MAIN CONFIGURATION
 #
 
-EXEC = main
+EXEC = generator
 ANALYSER = analyser
 OBJECTS = lex.yy.o y.tab.o hach_table.o tree.o List.o level.o include.o
-PROJECT_NAME = main
+PROJECT_NAME = generator
 
 #
 # SUFFIXES
@@ -98,4 +98,4 @@ archive: clean
 	@echo "Done."
 
 # DEPENDANCIES
-main.o: main.c List.h hach_table.h include.h
+generator.o: generator.c List.h hach_table.h include.h

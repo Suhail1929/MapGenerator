@@ -1,7 +1,99 @@
-#include "List.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <wchar.h>
+#include <locale.h>
 #include <string.h>
+#include "level.h"
+#include "List.h"
+#include "hach_table.h"
+#include "tree.h"
+#include "include.h"
+
+void crt_or_upd_symbol(int type, char *name, int value)
+{
+  int erreur = 0;
+  if (erreur == ERR_DIV_0)
+  {
+    printf("Erreur de division par zéro\n");
+    erreur = 0;
+  }
+  else if (erreur == ERR_SYMBOLE)
+  {
+    printf("Symbole inconnu rencontré : %s\n", name);
+    erreur = 0;
+  }
+  else
+  {
+    symbol_t var;
+    cell_t *c;
+    var.type = TYPE_ENTIER;
+    var.name = name;
+    var.value.integer = value;
+    c = search_hach(&table, var);
+    if (c == NULL)
+    {
+      insert_hach(&table, var);
+    }
+    else
+    {
+      c->var.value.integer = var.value.integer;
+    }
+  }
+}
+
+int print_var(char *name)
+{
+  symbol_t var;
+  var.type = TYPE_ENTIER;
+  var.name = name;
+  cell_t *c = search_hach(&table, var);
+  if (c == NULL)
+  {
+    printf("Variable inconnue : %s \n", var.name);
+    exit(1);
+  }
+  else
+  {
+    return c->var.value.integer;
+  }
+}
+
+int incr_var(char *name)
+{
+  symbol_t var;
+  var.type = TYPE_ENTIER;
+  var.name = name;
+  cell_t *c = search_hach(&table, var);
+  if (c == NULL)
+  {
+    printf("Variable inconnue : %s \n", var.name);
+    exit(1);
+  }
+  else
+  {
+    c->var.value.integer++;
+    return c->var.value.integer;
+  }
+}
+
+int decr_var(char *name)
+{
+  symbol_t var;
+  var.type = TYPE_ENTIER;
+  var.name = name;
+  cell_t *c = search_hach(&table, var);
+  if (c == NULL)
+  {
+    printf("Variable inconnue : %s \n", var.name);
+    exit(1);
+  }
+  else
+  {
+    c->var.value.integer--;
+    return c->var.value.integer;
+  }
+}
 
 int variable_cmp(symbol_t a, symbol_t b)
 {

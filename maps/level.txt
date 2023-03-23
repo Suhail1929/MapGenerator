@@ -1,0 +1,29 @@
+level
+a=8
+x=1
+y=2
+h=5
+i=0
+end
+
+prc p_ladder(x,y,h)
+for(i,y,y+h,1)
+put(x,i,LADDER)
+endfor
+endprc
+
+prc p_outliner()
+for(i,0,60,1)
+put(i,0,BLOCK)
+put(i,19,BLOCK)
+endfor
+for(i,0,19,1)
+put(0,i,BLOCK)
+put(59,i,BLOCK)
+endfor
+endprc
+
+level
+p_ladder(x,y,h)
+p_outliner()
+end

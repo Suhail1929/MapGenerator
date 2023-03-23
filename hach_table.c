@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <wchar.h>
+#include <locale.h>
 #include <string.h>
+#include "level.h"
+#include "tree.h"
 #include "List.h"
 #include "hach_table.h"
 

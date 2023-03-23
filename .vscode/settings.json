@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "*.lex": "lex",
+        "*.y": "lex",
+        "string.h": "c",
+        "include.h": "c",
+        "hach_table.h": "c",
+        "level.h": "c",
+        "list.h": "c",
+        "math.h": "c",
+        "wchar.h": "c"
+    }
+}

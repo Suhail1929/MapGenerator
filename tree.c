@@ -1,14 +1,15 @@
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "List.h"
-#include "hach_table.h"
 #include <wchar.h>
 #include <locale.h>
+#include <string.h>
 #include "level.h"
-#include "include.h"
+#include "List.h"
+#include "hach_table.h"
 #include "tree.h"
+#include "include.h"
+
 // Create a new tree node with the specified type and value
 tree_t *create_tree(char type, int val, tree_list_t *child, int isbool)
 {
@@ -59,7 +60,7 @@ tree_list_t *create_tree_list(tree_t *tree, tree_list_t *child)
     return list;
 }
 
-double calculate_expression(tree_t *root)
+double calculate_tree(tree_t *root)
 {
     if (root == NULL)
         return -1;
@@ -73,16 +74,16 @@ double calculate_expression(tree_t *root)
         child = root->value.children;
         while (child != NULL)
         {
-            res += calculate_expression(child->tree);
+            res += calculate_tree(child->tree);
             child = child->next;
         }
         return res;
     case '-':
-        res = calculate_expression(root->value.children->tree);
+        res = calculate_tree(root->value.children->tree);
         child = root->value.children->next;
         while (child != NULL)
         {
-            res -= calculate_expression(child->tree);
+            res -= calculate_tree(child->tree);
             child = child->next;
         }
         return res;
@@ -91,40 +92,104 @@ double calculate_expression(tree_t *root)
         child = root->value.children;
         while (child != NULL)
         {
-            res *= calculate_expression(child->tree);
+            res *= calculate_tree(child->tree);
             child = child->next;
         }
         return res;
 
     case '/':
-        res = calculate_expression(root->value.children->tree);
+        res = calculate_tree(root->value.children->tree);
         child = root->value.children->next;
         while (child != NULL)
         {
-            res /= calculate_expression(child->tree);
+            res /= calculate_tree(child->tree);
             child = child->next;
         }
         return res;
     case '<':
-        return calculate_expression(root->value.children->tree) < calculate_expression(root->value.children->next->tree);
+        return calculate_tree(root->value.children->tree) < calculate_tree(root->value.children->next->tree);
     case '>':
-        return calculate_expression(root->value.children->tree) > calculate_expression(root->value.children->next->tree);
+        return calculate_tree(root->value.children->tree) > calculate_tree(root->value.children->next->tree);
     case 'I':
-        return calculate_expression(root->value.children->tree) <= calculate_expression(root->value.children->next->tree);
+        return calculate_tree(root->value.children->tree) <= calculate_tree(root->value.children->next->tree);
     case 'S':
-        return calculate_expression(root->value.children->tree) >= calculate_expression(root->value.children->next->tree);
+        return calculate_tree(root->value.children->tree) >= calculate_tree(root->value.children->next->tree);
     case '=':
-        return calculate_expression(root->value.children->tree) == calculate_expression(root->value.children->next->tree);
+        return calculate_tree(root->value.children->tree) == calculate_tree(root->value.children->next->tree);
     case '!':
-        return calculate_expression(root->value.children->tree) != calculate_expression(root->value.children->next->tree);
+        return calculate_tree(root->value.children->tree) != calculate_tree(root->value.children->next->tree);
     case '&':
-        return calculate_expression(root->value.children->tree) && calculate_expression(root->value.children->next->tree);
+        return calculate_tree(root->value.children->tree) && calculate_tree(root->value.children->next->tree);
     case '|':
-        return calculate_expression(root->value.children->tree) || calculate_expression(root->value.children->next->tree);
+        return calculate_tree(root->value.children->tree) || calculate_tree(root->value.children->next->tree);
     case 'P':
-        return put(calculate_expression(root->value.children->tree), calculate_expression(root->value.children->next->tree), calculate_expression(root->value.children->next->next->tree));
+        return put(calculate_tree(root->value.children->tree), calculate_tree(root->value.children->next->tree), calculate_tree(root->value.children->next->next->tree));
     case 'G':
-        return get(calculate_expression(root->value.children->tree), calculate_expression(root->value.children->next->tree));
+        return get(calculate_tree(root->value.children->tree), calculate_tree(root->value.children->next->tree));
+    case 'f':
+    case 'p':
+    {
+        // Chercher la fonction dans la liste des fonctions définies
+        function_t *func = function_list;
+        while (func != NULL)
+        {
+            if (strcmp(func->name, root->name) == 0)
+            {
+                break;
+            }
+            func = func->next;
+        }
+
+        // Si la fonction n'est pas trouvée, retourner une erreur ou une valeur par défaut
+        if (func == NULL)
+        {
+            fprintf(stderr, "Function '%s' not found\n", root->name);
+            return 0;
+        }
+
+        // Associer les arguments de l'appel de fonction aux paramètres de la fonction définie
+        tree_list_t *args = root->value.children;
+        tree_list_t *params = func->params;
+        while (args != NULL && params != NULL)
+        {
+            tree_t *arg_tree = args->tree;
+            tree_t *param_tree = params->tree;
+            if (param_tree->type == 'i' && param_tree->name != NULL)
+            {
+                crt_or_upd_symbol(TYPE_ENTIER, param_tree->name, calculate_tree(arg_tree));
+            }
+            args = args->next;
+            params = params->next;
+        }
+
+        // Exécuter les instructions de la fonction avec les arguments associés
+        tree_list_t *instructions = func->instructions;
+        // float ret_value = 0;
+        if (root->type == 'p')
+        {
+            while (instructions != NULL)
+            {
+                tree_t *instr_tree = instructions->tree;
+                // ret_value = calculate_tree(instr_tree);
+                calculate_tree(instr_tree);
+                instructions = instructions->next;
+            }
+            return FUNC_ACC;
+        }
+        else
+        {
+            float ret_value = 0;
+            while (instructions != NULL)
+            {
+                tree_t *instr_tree = instructions->tree;
+                ret_value = calculate_tree(instr_tree);
+                calculate_tree(instr_tree);
+                instructions = instructions->next;
+            }
+            return ret_value;
+        }
+    }
+
     default:
         break;
     }
@@ -290,4 +355,25 @@ tree_t *deep_copy_tree(tree_t *tree)
     }
 
     return new_tree;
+}
+
+tree_t *create_tree_func_call(char *func_name, tree_list_t *args)
+{
+    tree_t *tree = malloc(sizeof(tree_t));
+    tree->type = 'f';
+    tree->value.children = args;
+    tree->isbool = 0;
+    tree->name = func_name;
+
+    return tree;
+}
+tree_t *create_tree_prc_call(char *func_name, tree_list_t *args)
+{
+    tree_t *tree = malloc(sizeof(tree_t));
+    tree->type = 'p';
+    tree->value.children = args;
+    tree->isbool = 0;
+    tree->name = func_name;
+
+    return tree;
 }

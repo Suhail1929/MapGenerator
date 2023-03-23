@@ -1,9 +1,0 @@
-level
-i=0
-j=0
-for(i,0,20,1)
-for(j,0,60,1)
-put(j,i,BLOCK)
-endfor
-endfor
-end

@@ -17,6 +17,7 @@ extern int yylineno;
 
 %%
 
+
 [0-9]+	 {
            yylval.entier = atoi(yytext);
            return ENTIER;
@@ -48,6 +49,10 @@ for { return FOR; }
 endfor { return endfor; }
 while { return WHILE; }
 endwhile { return endwhile; }
+fct {return fct;}
+endfct { return endfct; }
+prc {return prc;}
+endprc { return endprc; }
 "++" { return incr; }
 "--" { return decr; }
 "==" { return egal; }
@@ -57,9 +62,17 @@ endwhile { return endwhile; }
 "AND" { return et; }
 "OR" { return ou; }
 [\n] { yylineno++;}
-"quit" { return quit; }
+"f_"[a-zA-Z][a-zA-Z0-9]*    {
+                     yylval.str = strdup(yytext);
+                     return FUNCNAME;
+                   }
+"p_"[a-zA-Z][a-zA-Z0-9]*    {
+                     yylval.str = strdup(yytext);
+                     return PROCNAME;
+                   }                   
 [a-zA-Z]+ { yylval.str = (char*)malloc((strlen(yytext)+1)*sizeof(char)); strcpy(yylval.str,yytext); return variable; }
 [-+*/<>\(\)=,]	 { return *yytext; }
+
 [[:space:]] ;
 .        yyerror("Caractère non valide");
 
