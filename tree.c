@@ -26,7 +26,22 @@ tree_t *create_tree(char type, int val, tree_list_t *child, int isbool)
 
     return node;
 }
-
+tree_t *create_tree_var(char type, int val, tree_list_t *child, int isbool, char *name)
+{
+    tree_t *node = (tree_t *)malloc(sizeof(tree_t));
+    node->type = type;
+    node->isbool = isbool;
+    if (node->type == 'i')
+    {
+        node->value.integer = val;
+    }
+    else
+    {
+        node->value.children = child;
+    }
+    node->name = name;
+    return node;
+}
 // Add a child node to the specified parent node
 void add_child_node(tree_t *parent, tree_t *child)
 {
@@ -170,4 +185,109 @@ void free_tree(tree_t *tree)
         }
     }
     free(tree);
+}
+
+void update_variable_in_tree(tree_t *tree, char *name, int value)
+{
+    if (tree == NULL)
+    {
+        return;
+    }
+
+    // Check if the current node's name matches the given name
+    if (tree->name != NULL && strcmp(tree->name, name) == 0)
+    {
+        // Update the value
+        tree->value.integer = value;
+    }
+
+    // If the current node has children, traverse them
+    if (tree->type != 'i' && tree->value.children != NULL)
+    {
+        struct tree_list_t *child_list = tree->value.children;
+
+        while (child_list != NULL)
+        {
+            update_variable_in_tree(child_list->tree, name, value);
+            child_list = child_list->next;
+        }
+    }
+}
+
+void update_variable_in_tree_list(tree_list_t *tree_list, char *name, int value)
+{
+    while (tree_list)
+    {
+        tree_t *tr = tree_list->tree;
+        update_variable_in_tree(tr, name, value);
+        tree_list = tree_list->next;
+    }
+}
+tree_t *deep_copy_tree(tree_t *tree)
+{
+    if (tree == NULL)
+    {
+        return NULL;
+    }
+
+    tree_t *new_tree = malloc(sizeof(tree_t));
+    if (new_tree == NULL)
+    {
+        fprintf(stderr, "Erreur : échec de l'allocation de mémoire pour un nouvel arbre.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    new_tree->type = tree->type;
+    new_tree->isbool = tree->isbool;
+
+    if (tree->name != NULL)
+    {
+        new_tree->name = strdup(tree->name);
+        if (new_tree->name == NULL)
+        {
+            fprintf(stderr, "Erreur : échec de l'allocation de mémoire pour le nom de l'arbre.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        new_tree->name = NULL;
+    }
+
+    if (tree->type == 'i')
+    {
+        new_tree->value.integer = tree->value.integer;
+    }
+    else
+    {
+        new_tree->value.children = NULL;
+        tree_list_t *current = tree->value.children;
+        tree_list_t *new_tail = NULL;
+
+        while (current != NULL)
+        {
+            tree_list_t *new_child = malloc(sizeof(tree_list_t));
+            if (new_child == NULL)
+            {
+                fprintf(stderr, "Erreur : échec de l'allocation de mémoire pour un nouveau noeud de liste chaînée.\n");
+                exit(EXIT_FAILURE);
+            }
+
+            new_child->tree = deep_copy_tree(current->tree);
+            new_child->next = NULL;
+
+            if (new_tree->value.children == NULL)
+            {
+                new_tree->value.children = new_child;
+            }
+            else
+            {
+                new_tail->next = new_child;
+            }
+            new_tail = new_child;
+            current = current->next;
+        }
+    }
+
+    return new_tree;
 }

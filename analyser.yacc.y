@@ -47,15 +47,18 @@ char *symbole_erreur = NULL;
 %token endif
 %token FOR
 %token endfor
+%token WHILE
+%token endwhile
 
 %type<entier> ENTIER
-%type<entier> BOOLEEN
+%type<tree> BOOLEEN
 %type<str> variable
 %type<tree> EXPRESSION
 %type<tree> VARIABLE
 %type<tree_list_t> INSTR_LIST 
 %type<tree_list_t> CONDITION 
 %type<tree_list_t> FORLOOP
+%type<tree_list_t> WHILELOOP
 
 %left '='
 %left '*' '/' 
@@ -145,17 +148,27 @@ INSTR_LIST: EXPRESSION  {
               }
               last->next = $<tree_list>2;
               }
+            | WHILELOOP
+            | INSTR_LIST WHILELOOP {
+              tree_list_t *last = $<tree_list>1;
+              while (last->next) {
+                last = last->next;
+              }
+              last->next = $<tree_list>2;
+            }
               ;
 
 CONDITION:   IF '(' BOOLEEN ')' INSTR_LIST ELSE INSTR_LIST endif {
-              if($3== 1){
+              int booleen = calculate_expression($<tree>3);
+              if(booleen== 1){
                   $<tree_list>$ = $<tree_list>5;
               }else{
                   $<tree_list>$ = $<tree_list>7;
               }
               }
               |  IF '(' BOOLEEN ')' INSTR_LIST endif {
-                  if($3== 1){
+                int booleen = calculate_expression($<tree>3);
+                  if(booleen== 1){
                       $<tree_list>$ = $<tree_list>5;
                   }else{
                       $<tree_list>$ = NULL;
@@ -163,22 +176,72 @@ CONDITION:   IF '(' BOOLEEN ')' INSTR_LIST ELSE INSTR_LIST endif {
               };
 
 FORLOOP : FOR '(' VARIABLE ',' ENTIER ',' ENTIER ',' ENTIER ')' INSTR_LIST endfor {
-                tree_list_t *current_list = $<tree_list>11;
-                tree_list_t *new_list = NULL;
-                for (int i = $5; i < $7; i += $9) {
-                  if(new_list == NULL){
-                    new_list=current_list;
-                  }else{
-                    while(new_list->next){
-                        new_list = current_list->next;
+                   tree_list_t* head = NULL;
+                    tree_list_t* tail = NULL;
+                    for (int i = $5; i < $7; i += $9) {
+                        symbol_t var;
+                        cell_t* c;
+                        var.type = TYPE_ENTIER;
+                        var.name = $<tree>3->name;
+                        var.value.integer = i;
+                        c = search_hach(&table, var);
+                        if (c == NULL) {
+                            insert_hach(&table, var);
+                        } else {
+                            c->var.value.integer = i;
+                        }
+                        printf("i = %d\n", c->var.value.integer);
+                        tree_list_t* curr = $<tree_list>11;
+                        while (curr != NULL) {
+                            tree_t* copied_tree = deep_copy_tree(curr->tree);
+                            update_variable_in_tree(copied_tree, var.name, i);
+                            tree_list_t* new_node = malloc(sizeof(tree_list_t));
+                            if (new_node == NULL) {
+                                fprintf(stderr, "Erreur : échec de l'allocation de mémoire pour un nouveau noeud de liste chaînée.\n");
+                                exit(EXIT_FAILURE);
+                            }
+                            new_node->tree = copied_tree;
+                            new_node->next = NULL;
+                            if (tail == NULL) {
+                                head = new_node;
+                            } else {
+                                tail->next = new_node;
+                            }
+                            tail = new_node;
+                            curr = curr->next;
+                        }
                     }
-                    printf("debug\n");
-                    new_list->next = current_list;
-                  }
-                }
-                display_tree_list(new_list);
-               $<tree_list>$ = new_list ;
-          };
+                    $<tree_list>$ = head;
+                    };
+
+WHILELOOP : WHILE '(' BOOLEEN ')' INSTR_LIST endwhile {
+              tree_list_t* head = NULL;
+              tree_list_t* tail = NULL;
+              int booleen = calculate_expression($<tree>3);
+              while(booleen==1){
+                        booleen = calculate_expression($<tree>3);
+                        tree_list_t* curr = $<tree_list>5;
+                        while (curr != NULL) {
+                            tree_t* copied_tree = deep_copy_tree(curr->tree);
+                            tree_list_t* new_node = malloc(sizeof(tree_list_t));
+                            if (new_node == NULL) {
+                                fprintf(stderr, "Erreur : échec de l'allocation de mémoire pour un nouveau noeud de liste chaînée.\n");
+                                exit(EXIT_FAILURE);
+                            }
+                            new_node->tree = copied_tree;
+                            new_node->next = NULL;
+                            if (tail == NULL) {
+                                head = new_node;
+                            } else {
+                                tail->next = new_node;
+                            }
+                            tail = new_node;
+                            curr = curr->next;
+                        }
+              }
+                $<tree_list>$ = head;
+              };
+        
 
 
 VARIABLE : variable {
@@ -192,7 +255,7 @@ VARIABLE : variable {
                 if(symbole_erreur!=NULL) free(symbole_erreur);
                 symbole_erreur=$1;
               }else{
-                $$ = create_tree('i',c->var.value.integer,NULL,0);
+                $$ = create_tree_var('i',c->var.value.integer,NULL,0,$1);
               }
             }
             |
@@ -217,7 +280,7 @@ VARIABLE : variable {
                 }else{
                   c->var.value.integer=var.value.integer;
                 }
-               $$ = create_tree('i',var.value.integer,NULL,0);
+               $$ = create_tree_var('i',var.value.integer,NULL,0,$1);
               }
               free_tree($<tree>3);
             };
@@ -264,47 +327,37 @@ EXPRESSION:  VARIABLE
               }
               ;
 BOOLEEN:     EXPRESSION egal EXPRESSION { 
-              tree_t *eg = create_tree('=',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = calculate_expression(eg);
+              $<tree>$ = create_tree('=',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
             }
             | EXPRESSION diff EXPRESSION { 
-              tree_t *dif = create_tree('!',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = calculate_expression(dif);
+              $<tree>$ = create_tree('!',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
             }
             | EXPRESSION '<' EXPRESSION { 
-              tree_t *petit = create_tree('<',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = calculate_expression(petit);
+              $<tree>$ = create_tree('<',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
             }
             | EXPRESSION '>' EXPRESSION { 
-              tree_t *grand = create_tree('>',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = calculate_expression(grand);
+              $<tree>$ = create_tree('>',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
             }
             | EXPRESSION infegal EXPRESSION { 
-              tree_t *petit = create_tree('I',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = calculate_expression(petit);
+              $<tree>$ = create_tree('I',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
             }
             | EXPRESSION supegal EXPRESSION {
-              tree_t *grand = create_tree('S',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = calculate_expression(grand);
+              $<tree>$ = create_tree('S',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
             }
             | EXPRESSION et EXPRESSION { 
-              tree_t *e = create_tree('&',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = calculate_expression(e);
+              $<tree>$ = create_tree('&',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
             }
             | EXPRESSION ou EXPRESSION { 
-              tree_t *o = create_tree('|',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
-              $$ = calculate_expression(o);
+              $<tree>$ = create_tree('|',0,create_tree_list($<tree>1,create_tree_list($<tree>3,NULL)),1);
             }
             | ENTIER {
               if(ENTIER==0){
-                $$ = 0;
+                $$ = create_tree('i',0,NULL,1);
              }else{
-                $$ = 1;
+                $$ = create_tree('i',1,NULL,1);
              }
              }
-            | VARIABLE{
-              $$ = calculate_expression($<tree>1);
-            }
+            | VARIABLE
             ;
   
 

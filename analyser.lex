@@ -46,6 +46,8 @@ else  { return ELSE; }
 endif  { return endif; }
 for { return FOR; }
 endfor { return endfor; }
+while { return WHILE; }
+endwhile { return endwhile; }
 "++" { return incr; }
 "--" { return decr; }
 "==" { return egal; }

@@ -1,0 +1,7 @@
+level
+i=1
+j=4
+while(i<=j)
+i++
+endwhile
+end
