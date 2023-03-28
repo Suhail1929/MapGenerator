@@ -111,4 +111,6 @@ tree_list_t *execute_while(tree_t *booleen, tree_list_t *inst_list);
  */
 
 tree_list_t *execute_for(char *name, int start, int end_, int incrementeur, tree_list_t *inst_list);
+
+char *afficher_salons();
 #endif

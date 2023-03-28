@@ -1,0 +1,49 @@
+level
+a=8
+x=1
+y=2
+h=8
+i=0
+end
+
+
+prc p_ladder(x=10,y=11,h)
+    for(i,y,y+h,1)
+        put(x,i,LADDER)
+    endfor
+endprc
+prc p_gate(x=40,y=12,h=7)
+    for(i,y,y+h,1)
+        put(x,i,GATE(1))
+    endfor
+endprc
+
+prc p_outliner()
+    for(i,0,60,1)
+        put(i,0,BLOCK)
+        put(i,19,BLOCK)
+    endfor
+    for(i,0,19,1)
+        put(0,i,BLOCK)
+        put(59,i,BLOCK)
+    endfor
+endprc
+
+level
+    p_ladder(x,y,h)
+    p_gate(x,y,h)
+    p_outliner()
+    put(2,15,ENTER)
+    put(55,15,EXIT)
+    put(50,7,DOOR(14))
+    put(55,10,LIFE)
+    put(27,7,ROBOT)
+    for(i,35,40,1)
+        put(i,11,TRAP)
+    endfor
+    put(30,13,PROBE)
+    put(40,9,KEY(1))
+    for(i,13,60,1)
+        put(i,11,BLOCK)
+    endfor
+end

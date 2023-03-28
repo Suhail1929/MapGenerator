@@ -3,7 +3,7 @@
 #
 
 EXEC = generator
-ANALYSER = analyser
+ANALYSER = generator
 OBJECTS = lex.yy.o y.tab.o hach_table.o tree.o List.o level.o include.o
 PROJECT_NAME = generator
 

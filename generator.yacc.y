@@ -68,14 +68,16 @@ char *symbole_erreur = NULL;
 %type<tree_list_t> PARAM_LIST
 %type<tree> PRC_CALL
 
-%left '='
-%left '*' '/' 
-%left '+' '-'
-%left '<' '>' '!' '&' '|' 'i'
 %left ou
 %left et
 %left egal diff
 %left infegal supegal
+
+%left '='
+%left '+' '-'
+%left '*' '/' 
+%left '<' '>' '!' '&' '|' 'i'
+
 
 %%
 LEVEL:
@@ -204,11 +206,19 @@ PROCEDURE_DEF: prc PROCNAME '(' PARAM_LIST ')' INSTR_LIST endprc {
                 new_func->instructions = $<tree_list>6;
                 new_func->next = function_list;
                 function_list = new_func;
+            }|  fct FUNCNAME '(' PARAM_LIST ')' INSTR_LIST endfct {
+                function_t *new_func = malloc(sizeof(function_t));
+                new_func->name = $<str>2;
+                new_func->params = $<tree_list>4;
+                new_func->instructions = $<tree_list>6;
+                new_func->next = function_list;
+                function_list = new_func;
             };
-
 
 PRC_CALL : PROCNAME '(' PARAM_LIST ')' {
                 $$ = create_tree_prc_call($1, $<tree_list>3);
+            }| FUNCNAME '(' PARAM_LIST ')' {
+                $$ = create_tree_func_call($1, $<tree_list>3);
             };
 
 PARAM_LIST : /* empty */{

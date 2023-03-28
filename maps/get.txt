@@ -1,4 +1,6 @@
 level
   put(10,10,BLOCK)
   put(11,10,get(10, 10))
+  put(5,5,ROBOT)
+  get(5,5)
 end

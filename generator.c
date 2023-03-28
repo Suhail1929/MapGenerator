@@ -3,6 +3,8 @@
 #include <math.h>
 #include <wchar.h>
 #include <locale.h>
+#include <dirent.h>
+#include <ctype.h>
 #include <string.h>
 #include "level.h"
 #include "List.h"
@@ -14,13 +16,10 @@ extern int yyparse();
 extern FILE *yyin;
 int main(int argc, char *argv[])
 {
+    char *map_name;
     char path[100];
-    if (argc != 2)
-    {
-        printf("Usage: %s <file>\n", argv[0]);
-        return EXIT_FAILURE;
-    }
-    sprintf(path, "./maps/%s.txt", argv[1]);
+    map_name = afficher_salons();
+    sprintf(path, "./maps/%s.txt", map_name);
     yyin = fopen(path, "r");
     if (yyin == NULL)
     {

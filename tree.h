@@ -15,7 +15,7 @@ typedef struct tree_list_t tree_list_t;
 
 struct tree_t
 {
-    char type; // n = entier ...
+    char type; 
     int isbool;
     char *name;
     union

@@ -1,3 +1,0 @@
-level
-  put(10,10,KEY(10))
-end
