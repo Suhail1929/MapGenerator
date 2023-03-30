@@ -23,8 +23,6 @@ char *symbole_erreur = NULL;
   tree_t* tree;
 };
 
-%token ENTIER
-%token variable
 %token put_
 %token get_
 %token door_
@@ -49,16 +47,14 @@ char *symbole_erreur = NULL;
 %token endwhile
 %token fct
 %token endfct
-%token FUNCNAME
 %token prc 
 %token endprc
-%token PROCNAME
 
-%type<entier> ENTIER
-%type <str> FUNCNAME
-%type<str> PROCNAME
+%token<entier> ENTIER
+%token <str> FUNCNAME
+%token<str> PROCNAME
 %type<tree> BOOLEEN
-%type<str> variable
+%token<str> variable
 %type<tree> EXPRESSION
 %type<tree> VARIABLE
 %type<tree_list_t> INSTR_LIST 
